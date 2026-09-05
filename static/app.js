@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentPipelineResult = null;
   let actionHistory = [];
   let dataIndex = null;
+  let typewriterInterval = null;
+  let fullNarrationText = "";
 
   // DOM Elements
   const sampleSelect = document.getElementById("sample-notice-select");
@@ -30,7 +32,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const legendWarnCount = document.getElementById("legend-warn-count");
   const legendCriticalCount = document.getElementById("legend-critical-count");
 
+  // Results containers
   const emptyState = document.getElementById("empty-state");
+  const skeletonContainer = document.getElementById("skeleton-loading-container");
   const noImpactAlert = document.getElementById("no-impact-alert");
   const alertTitle = document.getElementById("alert-title");
   const alertBody = document.getElementById("alert-body");
@@ -44,7 +48,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const actionCardsSection = document.getElementById("action-cards-section");
   const actionCardsList = document.getElementById("action-cards-list");
+  const btnExportPdf = document.getElementById("btn-export-pdf");
 
+  // Modals & Slideover
   const auditModal = document.getElementById("audit-modal");
   const btnOpenAudit = document.getElementById("btn-open-audit");
   const btnCloseAudit = document.getElementById("btn-close-audit");
@@ -56,12 +62,26 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnCloseIndex = document.getElementById("btn-close-index");
   const dataIndexJson = document.getElementById("data-index-json");
 
+  const slideoverBackdrop = document.getElementById("slideover-backdrop");
+  const slideoverTitle = document.getElementById("slideover-title");
+  const slideoverFields = document.getElementById("slideover-fields");
+  const slideoverRawJson = document.getElementById("slideover-raw-json");
+  const btnCloseSlideover = document.getElementById("btn-close-slideover");
+
+  const toastContainer = document.getElementById("toast-container");
+  const cmdKeyLabel = document.getElementById("cmd-key-label");
+
   // Trace strip steps
   const traceStep1 = document.getElementById("trace-step-1");
   const traceStep2 = document.getElementById("trace-step-2");
   const traceStep3 = document.getElementById("trace-step-3");
   const traceStep4 = document.getElementById("trace-step-4");
   const traceStep5 = document.getElementById("trace-step-5");
+
+  // Detect OS for shortcut hint
+  if (navigator.platform.toUpperCase().indexOf('MAC') >= 0) {
+    if (cmdKeyLabel) cmdKeyLabel.textContent = '⌘';
+  }
 
   // Initialize App
   initHealthCheck();
@@ -132,6 +152,29 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnAnalyze.addEventListener("click", runAnalysis);
 
+    // Keyboard shortcut: Cmd/Ctrl + Enter
+    noticeTextarea.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+        e.preventDefault();
+        runAnalysis();
+      }
+    });
+
+    // Typewriter skippable click
+    headlineText.addEventListener("click", () => {
+      if (typewriterInterval) {
+        clearInterval(typewriterInterval);
+        typewriterInterval = null;
+        headlineText.textContent = fullNarrationText;
+      }
+    });
+
+    // PDF Export
+    btnExportPdf.addEventListener("click", () => {
+      window.print();
+    });
+
+    // Audit Modal
     btnOpenAudit.addEventListener("click", () => {
       fetchAuditHistory();
       auditModal.style.display = "flex";
@@ -141,6 +184,7 @@ document.addEventListener("DOMContentLoaded", () => {
       auditModal.style.display = "none";
     });
 
+    // Index Modal
     btnOpenIndex.addEventListener("click", () => {
       renderDataIndexTab("tab-suppliers");
       indexModal.style.display = "flex";
@@ -148,6 +192,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
     btnCloseIndex.addEventListener("click", () => {
       indexModal.style.display = "none";
+    });
+
+    // Slide-over close
+    btnCloseSlideover.addEventListener("click", () => {
+      slideoverBackdrop.style.display = "none";
+    });
+
+    slideoverBackdrop.addEventListener("click", (e) => {
+      if (e.target === slideoverBackdrop) {
+        slideoverBackdrop.style.display = "none";
+      }
     });
 
     document.querySelectorAll(".tab-btn").forEach(btn => {
@@ -190,6 +245,10 @@ document.addEventListener("DOMContentLoaded", () => {
     noImpactAlert.style.display = "none";
     pipelineDetailsContainer.style.display = "none";
     actionCardsSection.style.display = "none";
+    btnExportPdf.style.display = "none";
+
+    // Show Skeleton Loading Placeholder
+    skeletonContainer.style.display = "flex";
 
     resetTraceStrip();
     traceStep1.classList.add("active");
@@ -212,8 +271,12 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       currentPipelineResult = data;
 
+      // Hide Skeleton Loading
+      skeletonContainer.style.display = "none";
+
       renderPipelineResult(data);
     } catch (e) {
+      skeletonContainer.style.display = "none";
       alert("Error analyzing disruption notice: " + e.message);
     } finally {
       btnAnalyze.disabled = false;
@@ -230,7 +293,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const stage4 = data.stage4 || {};
 
     if (!data.match_found || isShortCircuited) {
-      // Short-circuit: Only steps 1 & 2 active; 3, 4, 5 stay unfilled
+      // Short-circuit: Steps 1 & 2 fill in; 3, 4, 5 stay unfilled
       traceStep1.classList.add("active");
       traceStep2.classList.add("active");
       traceStep3.classList.add("unfilled");
@@ -269,13 +332,39 @@ document.addEventListener("DOMContentLoaded", () => {
       `;
     } else {
       pipelineDetailsContainer.style.display = "flex";
-      headlineText.textContent = stage4.headline || `Disruption impacts ${stage2.total_orders_affected} order(s) totaling $${(stage2.total_at_risk_value || 0).toLocaleString()} at risk.`;
+      btnExportPdf.style.display = "inline-flex";
+
+      // Typewriter reveal for Stage 4 narration text
+      fullNarrationText = stage4.headline || `Disruption impacts ${stage2.total_orders_affected} order(s) totaling $${(stage2.total_at_risk_value || 0).toLocaleString()} at risk.`;
+      startTypewriterReveal(fullNarrationText);
 
       stage1Summary.textContent = `${(stage1.candidate_matches || []).length} entity candidate(s) matched (${stage1.notice_summary || ''}).`;
       stage2Summary.textContent = `${stage2.total_orders_affected || 0} order(s) affected across ${(stage2.affected_skus || []).length} SKU(s). Total at risk: $${(stage2.total_at_risk_value || 0).toLocaleString()}.`;
 
       renderManifestRows(affectedOrders);
     }
+  }
+
+  function startTypewriterReveal(text) {
+    if (typewriterInterval) clearInterval(typewriterInterval);
+    headlineText.textContent = "";
+    
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (prefersReducedMotion) {
+      headlineText.textContent = text;
+      return;
+    }
+
+    let idx = 0;
+    typewriterInterval = setInterval(() => {
+      if (idx < text.length) {
+        headlineText.textContent += text.charAt(idx);
+        idx++;
+      } else {
+        clearInterval(typewriterInterval);
+        typewriterInterval = null;
+      }
+    }, 15);
   }
 
   function updateKpiHeroStrip(orders, totalAtRiskValue) {
@@ -296,7 +385,6 @@ document.addEventListener("DOMContentLoaded", () => {
       else if (score <= 70) countWarn++;
       else countCritical++;
 
-      // Compute cost at risk from recommended option cost
       const recOpt = (o.options || []).find(opt => opt.action === o.recommended_option);
       if (recOpt && recOpt.cost_estimate) {
         sumCost += recOpt.cost_estimate;
@@ -309,8 +397,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     kpiTotalRisk.textContent = sumRisk.toFixed(1);
     kpiCostAtRisk.textContent = `$${sumCost.toFixed(2)}`;
-    
-    // Severity color formatting for cost at risk
+
     if (sumCost > 500) {
       kpiCostAtRisk.className = "kpi-number mono-num status-critical";
     } else if (sumCost > 0) {
@@ -321,7 +408,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     kpiNearestDeadline.textContent = minDays !== 999 ? `${minDays} days` : "-";
 
-    // Urgency distribution mini-chart calculation
     legendGoodCount.textContent = countGood;
     legendWarnCount.textContent = countWarn;
     legendCriticalCount.textContent = countCritical;
@@ -330,9 +416,9 @@ document.addEventListener("DOMContentLoaded", () => {
       segGood.style.width = "33%";
       segWarn.style.width = "33%";
       segCritical.style.width = "34%";
-      segGood.title = "Low Urgency: 0";
-      segWarn.title = "Medium Urgency: 0";
-      segCritical.title = "High Urgency: 0";
+      segGood.title = "Low Urgency: 0 orders";
+      segWarn.title = "Medium Urgency: 0 orders";
+      segCritical.title = "High Urgency: 0 orders";
     } else {
       const pctGood = Math.round((countGood / count) * 100);
       const pctWarn = Math.round((countWarn / count) * 100);
@@ -354,7 +440,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     orders.forEach(ord => {
       const row = document.createElement("div");
-      
+
       const score = ord.urgency_score;
       let scoreColorClass = "status-good";
       let statusRowClass = "status-good-row";
@@ -395,7 +481,7 @@ document.addEventListener("DOMContentLoaded", () => {
       row.innerHTML = `
         <div class="row-status-bar"></div>
         <div class="cell-order">
-          <a class="order-id-link" onclick="inspectRecord('${ord.order_id}')">${ord.order_id}</a>
+          <a class="order-id-link" onclick="openRecordSlideover('${ord.order_id}')">${ord.order_id}</a>
           <span class="customer-name">${ord.customer_name || ord.order_id}</span>
           <div style="margin-top: 4px;">${tierBadge}</div>
         </div>
@@ -449,27 +535,52 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function formatShortfallSummary(summaryText) {
     if (!summaryText) return "";
-    return summaryText.replace(/\b(ORD-\d+|SHP-\d+|SKU-\d+|SUP-\d+|CUST-\d+)\b/g, '<span class="record-citation" onclick="inspectRecord(\'$1\')">$1</span>');
+    return summaryText.replace(/\b(ORD-\d+|SHP-\d+|SKU-\d+|SUP-\d+|CUST-\d+)\b/g, '<span class="record-citation" onclick="openRecordSlideover(\'$1\')">$1</span>');
   }
 
-  window.inspectRecord = function(recordId) {
+  // Slide-Over Panel for Clickable Record-ID Grounding Proof
+  window.openRecordSlideover = function(recordId) {
     if (!dataIndex) return;
+    let recData = null;
+    let recType = "Record";
+
     if (recordId.startsWith("ORD-")) {
-      const ord = dataIndex.orders.find(o => o.order_id === recordId);
-      if (ord) {
-        alert(`Order Details [${recordId}]:\nCustomer: ${ord.customer_name} (${ord.customer_tier} Tier)\nSKU: ${ord.sku} (${ord.sku_name})\nQuantity: ${ord.qty}\nValue: $${ord.order_value}\nPromised date: ${ord.promised_date}`);
-      }
+      recData = dataIndex.orders.find(o => o.order_id === recordId);
+      recType = "Customer Order Record";
     } else if (recordId.startsWith("SKU-")) {
-      const st = dataIndex.stock.find(s => s.sku === recordId);
-      if (st) {
-        alert(`Stock Item Details [${recordId}]:\nName: ${st.name}\nOn hand: ${st.on_hand}\nReserved: ${st.reserved}\nSafety stock: ${st.safety_stock}\nUnit cost: $${st.unit_cost}`);
-      }
+      recData = dataIndex.stock.find(s => s.sku === recordId);
+      recType = "Stock Inventory Record";
     } else if (recordId.startsWith("SHP-")) {
-      const shp = dataIndex.shipments.find(s => s.shipment_id === recordId);
-      if (shp) {
-        alert(`Shipment Details [${recordId}]:\nSupplier: ${shp.supplier_id}\nSKU: ${shp.sku}\nQuantity: ${shp.qty}\nCarrier: ${shp.carrier}\nETA: ${shp.eta}`);
-      }
+      recData = dataIndex.shipments.find(s => s.shipment_id === recordId);
+      recType = "In-Transit Shipment Record";
+    } else if (recordId.startsWith("SUP-")) {
+      recData = dataIndex.suppliers.find(s => s.id === recordId);
+      recType = "Supplier Master Record";
+    } else if (recordId.startsWith("CUST-")) {
+      recData = dataIndex.customers.find(c => c.customer_id === recordId);
+      recType = "Customer Profile Record";
     }
+
+    if (!recData) return;
+
+    slideoverTitle.textContent = `${recType}: ${recordId}`;
+    
+    // Render key-value pairs
+    let fieldsHtml = "";
+    Object.keys(recData).forEach(k => {
+      const val = recData[k];
+      const valStr = typeof val === "object" ? JSON.stringify(val) : String(val);
+      fieldsHtml += `
+        <div class="field-pair">
+          <span class="field-key">${k}</span>
+          <span class="field-val">${valStr}</span>
+        </div>
+      `;
+    });
+    slideoverFields.innerHTML = fieldsHtml;
+    slideoverRawJson.textContent = JSON.stringify(recData, null, 2);
+
+    slideoverBackdrop.style.display = "flex";
   };
 
   window.handleDecision = async function(orderId, action, decision) {
@@ -498,8 +609,10 @@ document.addEventListener("DOMContentLoaded", () => {
               <span>Action approved</span>
             `;
           }
+          showToast(`Action approved for order ${orderId} (${action})`, "good");
         } else {
           row.classList.add("rejected-row");
+          showToast(`Option rejected for order ${orderId}`, "muted");
         }
       }
 
@@ -508,6 +621,21 @@ document.addEventListener("DOMContentLoaded", () => {
       alert("Error recording decision: " + e.message);
     }
   };
+
+  function showToast(msg, type = "good") {
+    const toast = document.createElement("div");
+    toast.className = `toast-message ${type === "good" ? "toast-good" : "toast-muted"}`;
+    toast.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+      <span>${msg}</span>
+    `;
+    toastContainer.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = "0";
+      setTimeout(() => toast.remove(), 200);
+    }, 3000);
+  }
 
   async function fetchAuditHistory() {
     try {
@@ -524,7 +652,7 @@ document.addEventListener("DOMContentLoaded", () => {
       let html = "";
       actionHistory.forEach(a => {
         html += `
-          <tr>
+          <tr title="Exact timestamp: ${a.timestamp}">
             <td class="mono-num">${a.id}</td>
             <td class="mono-num">${a.timestamp}</td>
             <td class="mono-num">${a.order_id}</td>

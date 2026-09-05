@@ -118,6 +118,7 @@
         <div class="form-group">
           <label for="notice-textarea" class="form-label">Disruption notice text</label>
           <textarea id="notice-textarea" class="form-textarea" placeholder="Paste unstructured disruption advisory or email text here..."></textarea>
+          <span class="keyboard-hint">Press <kbd id="cmd-key-label">Ctrl</kbd>+<kbd>Enter</kbd> to analyze notice</span>
         </div>
 
         <div class="form-group">
@@ -138,18 +139,45 @@
 
       <!-- Right Panel: Results & Manifest -->
       <section class="panel-results">
-        <!-- Initial Empty State -->
+        <!-- Initial Empty State with 2-Color Geometric SVG Illustration -->
         <div class="empty-state" id="empty-state">
-          <div class="empty-icon-wrap">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <div class="empty-illustration-wrap">
+            <svg class="empty-state-svg" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="8" y="12" width="48" height="40" rx="8" fill="#4F46E5" fill-opacity="0.06" stroke="#4F46E5" stroke-width="2"/>
+              <path d="M8 24H56" stroke="#4F46E5" stroke-width="2"/>
+              <path d="M20 12V52" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="3 3"/>
+              <circle cx="44" cy="38" r="10" fill="#FFFFFF" stroke="#4F46E5" stroke-width="2"/>
+              <path d="M41 38L43 40L47 36" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
           <h2>Ready for disruption analysis</h2>
-          <p>Select a scenario or paste text on the left, then run the pipeline to evaluate supply chain impacts and mitigation options.</p>
+          <p>Paste a disruption notice above or choose a scenario on the left, then press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to analyze.</p>
+        </div>
+
+        <!-- Skeleton Loading Placeholder Rows -->
+        <div class="skeleton-container" id="skeleton-loading-container" style="display:none;">
+          <div class="skeleton-row">
+            <div class="skeleton-block sk-small"></div>
+            <div class="skeleton-block sk-medium"></div>
+            <div class="skeleton-block sk-small"></div>
+            <div class="skeleton-block sk-large"></div>
+          </div>
+          <div class="skeleton-row">
+            <div class="skeleton-block sk-small"></div>
+            <div class="skeleton-block sk-medium"></div>
+            <div class="skeleton-block sk-small"></div>
+            <div class="skeleton-block sk-large"></div>
+          </div>
+          <div class="skeleton-row">
+            <div class="skeleton-block sk-small"></div>
+            <div class="skeleton-block sk-medium"></div>
+            <div class="skeleton-block sk-small"></div>
+            <div class="skeleton-block sk-large"></div>
+          </div>
         </div>
 
         <!-- Full-Width Banner ONLY for No Impact / No Match -->
         <div class="outcome-banner" id="no-impact-alert" style="display:none;">
-          <!-- Custom Inline Geometric SVG Illustration -->
           <div class="banner-illustration-wrap">
             <svg class="no-impact-illustration" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
               <rect x="6" y="14" width="36" height="26" rx="4" fill="#4F46E5" fill-opacity="0.08" stroke="#4F46E5" stroke-width="2"/>
@@ -169,9 +197,9 @@
           </div>
         </div>
 
-        <!-- Execution Details Container -->
+        <!-- Execution Details Container with Typewriter Narration -->
         <div class="execution-block" id="pipeline-details-container" style="display:none;">
-          <div class="headline-bar" id="headline-text">Headline Summary</div>
+          <div class="headline-bar" id="headline-text" title="Click anywhere to reveal full narration text instantly">Headline Summary</div>
 
           <div class="stage-summary-grid">
             <div class="summary-card">
@@ -188,13 +216,39 @@
         <!-- Affected Orders Clean Row Manifest -->
         <div class="manifest-container" id="action-cards-section" style="display:none;">
           <div class="manifest-top">
-            <h2>Affected order manifest</h2>
-            <span class="manifest-sub">Ranked by calculated urgency score. Recommend, never act.</span>
+            <div>
+              <h2>Affected order manifest</h2>
+              <span class="manifest-sub">Ranked by calculated urgency score. Recommend, never act.</span>
+            </div>
+            <button class="btn btn-secondary" id="btn-export-pdf" style="display:none;">
+              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Export action plan
+            </button>
           </div>
           <div class="manifest-rows" id="action-cards-list"></div>
         </div>
       </section>
     </main>
+  </div>
+
+  <!-- Slide-Over Panel for Clickable Record-ID Grounding Citations -->
+  <div class="slideover-backdrop" id="slideover-backdrop" style="display:none;">
+    <div class="slideover-pane" id="record-slideover">
+      <div class="slideover-header">
+        <div>
+          <span class="slideover-tag">Grounding proof</span>
+          <h2 id="slideover-title">Record details</h2>
+        </div>
+        <button class="btn-close" id="btn-close-slideover" aria-label="Close slide-over">&times;</button>
+      </div>
+      <div class="slideover-body">
+        <div class="record-fields-grid" id="slideover-fields"></div>
+        <div class="raw-json-wrap">
+          <span class="field-key">Raw record JSON</span>
+          <pre id="slideover-raw-json" class="json-code"></pre>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- Audit Log Modal -->
@@ -242,6 +296,9 @@
       </div>
     </div>
   </div>
+
+  <!-- Toast Notification Container (Bottom-Right) -->
+  <div class="toast-container" id="toast-container"></div>
 
   <script src="/static/app.js"></script>
 </body>
