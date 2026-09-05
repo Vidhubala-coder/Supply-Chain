@@ -3,41 +3,155 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supply Chain Disruption Response Console (PS08)</title>
+  <title>Supply Chain Control Tower (PS08)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
+  <!-- Login Modal Overlay -->
+  <div class="modal-overlay" id="login-modal-overlay" style="display: flex;">
+    <div class="login-modal-card">
+      <div class="login-header">
+        <div class="login-brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <h2>Supply Chain Control Tower</h2>
+        </div>
+        <p class="login-subtitle">Enterprise Operations Login — Select role or enter credentials</p>
+      </div>
+
+      <div class="quick-demo-roles">
+        <span class="demo-label">Quick Sign-In Demo Roles:</span>
+        <div class="demo-buttons-row">
+          <button class="btn btn-secondary btn-sm" id="btn-quick-admin">
+            <span class="role-badge role-admin">ADMIN</span> Login as Executive Admin
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-quick-manager">
+            <span class="role-badge role-manager">OPS MANAGER</span> Login as Ops Manager
+          </button>
+        </div>
+      </div>
+
+      <form id="login-form" class="login-form">
+        <div class="form-group">
+          <label for="login-username" class="form-label">Username</label>
+          <input type="text" id="login-username" class="form-input" placeholder="admin or manager" required>
+        </div>
+        <div class="form-group">
+          <label for="login-password" class="form-label">Password</label>
+          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+        </div>
+        <div class="login-error-msg" id="login-error-msg" style="display:none;"></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-login">Sign In to Control Tower &rarr;</button>
+      </form>
+      <div class="login-footer">
+        <span>TRACK_ID=PS08 • "Gemini understands. Python calculates. Evidence proves. Humans decide."</span>
+      </div>
+    </div>
+  </div>
+
   <div class="app-shell flex-row">
     <!-- Sidebar Navigation Shell -->
     <aside class="app-sidebar">
       <div class="sidebar-brand">
-        <svg class="duotone-icon chrome-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        <span class="brand-name">Nexus Logistics</span>
+        <svg class="brand-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <span class="brand-name">SUPPLYCHAIN AI</span>
       </div>
 
       <nav class="sidebar-nav">
-        <button class="nav-item active" id="nav-dashboard" data-view="dashboard">
+        <div class="nav-section-title">OPERATIONS</div>
+        <button class="nav-item active" data-view="dashboard">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           <span>Dashboard</span>
         </button>
-        <button class="nav-item" id="nav-disruptions" data-view="disruptions">
+        <button class="nav-item" data-view="products">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
+          <span>Products</span>
+        </button>
+        <button class="nav-item" data-view="suppliers">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>Suppliers</span>
+        </button>
+        <button class="nav-item" data-view="warehouses">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18"/><path d="M5 21V7l8-4 8 4v14"/></svg>
+          <span>Warehouses</span>
+        </button>
+        <button class="nav-item" data-view="inventory">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+          <span>Inventory</span>
+        </button>
+        <button class="nav-item" data-view="shipments">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          <span>Shipments</span>
+        </button>
+        <button class="nav-item" data-view="orders">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span>Orders</span>
+        </button>
+        <button class="nav-item" data-view="customers">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span>Customers</span>
+        </button>
+
+        <div class="nav-section-title">AI OPERATIONS</div>
+        <button class="nav-item" data-view="disruptions">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
           <span>Disruptions</span>
         </button>
-        <button class="nav-item" id="nav-escalations" data-view="escalations">
+        <button class="nav-item" data-view="ai-analysis">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+          <span>AI Analysis</span>
+        </button>
+        <button class="nav-item" data-view="impact">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Impact Analysis</span>
+        </button>
+        <button class="nav-item" data-view="planner">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          <span>Response Planner</span>
+        </button>
+        <button class="nav-item" data-view="evidence">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          <span>Evidence Dossier</span>
+        </button>
+
+        <div class="nav-section-title">COMMUNICATION</div>
+        <button class="nav-item" data-view="notifications">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+          <span>Notifications / Email</span>
+        </button>
+
+        <div class="nav-section-title">MANAGEMENT</div>
+        <button class="nav-item" data-view="reports">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          <span>Reports & PDF</span>
+        </button>
+        <button class="nav-item" data-view="escalations">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
           <span>Escalations</span>
           <span class="badge badge-escalations" id="sidebar-escalations-badge">0</span>
+        </button>
+        <button class="nav-item admin-only-nav" data-view="admin" id="nav-admin-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10h-10V2z"/></svg>
+          <span>Admin Management</span>
         </button>
       </nav>
 
       <div class="sidebar-footer">
         <div class="status-pill" id="system-status-pill">
           <span class="status-dot"></span>
-          <span id="status-text">Checking API...</span>
+          <span id="status-text">System Operational</span>
+        </div>
+
+        <div class="logged-user-box" id="logged-user-box">
+          <div class="user-info">
+            <span class="user-name" id="user-display-name">Executive Admin</span>
+            <span class="role-badge" id="user-role-badge">ADMIN</span>
+          </div>
+          <button class="btn-logout" id="btn-logout" title="Logout">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          </button>
         </div>
       </div>
     </aside>
@@ -47,340 +161,620 @@
       <!-- Slim Header Bar -->
       <header class="app-header">
         <div class="header-brand">
-          <h1 class="header-title" id="page-view-title">Dashboard Overview</h1>
-          <span class="header-track">TRACK_ID=PS08</span>
+          <h1 class="header-title" id="page-view-title">Supply Chain Control Tower</h1>
+          <span class="header-track">TRACK_ID=PS08 • FASTAPI + SQLITE + GEMINI AI</span>
         </div>
 
         <div class="header-controls">
-          <button class="btn btn-secondary" id="btn-open-audit">
-            <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          <button class="btn btn-primary btn-sm" id="btn-header-analyze" onclick="switchView('impact')">
+            + Analyze New Disruption
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btn-open-audit">
             Audit log (<span id="audit-count" class="mono-num">0</span>)
           </button>
-          <button class="btn btn-secondary" id="btn-open-index">
-            <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <button class="btn btn-secondary btn-sm" id="btn-open-index">
             Data index
           </button>
         </div>
       </header>
 
-      <!-- View 1: Top-Level Dashboard Landing Screen -->
+      <!-- View 1: Control Tower Dashboard Landing Screen -->
       <section class="view-pane" id="view-dashboard" style="display: block;">
         <div class="dashboard-container">
+          <div class="control-tower-banner">
+            <div>
+              <h2 class="banner-title">Supply Chain Control Tower</h2>
+              <p class="banner-sub">Monitor disruptions, understand downstream impact, compare 4-way response strategies, and make evidence-backed decisions.</p>
+            </div>
+            <button class="btn btn-primary btn-lg" onclick="switchView('impact')">Analyze New Disruption &rarr;</button>
+          </div>
+
+          <!-- KPI Hero Strip -->
           <div class="dashboard-kpi-grid">
             <div class="dash-kpi-card">
-              <div class="dash-kpi-val mono-num" id="dash-active-disruptions">1</div>
+              <div class="dash-kpi-val mono-num" id="dash-active-disruptions">3</div>
               <div class="dash-kpi-lbl">Active Disruptions</div>
             </div>
             <div class="dash-kpi-card">
-              <div class="dash-kpi-val mono-num" id="dash-orders-at-risk">3</div>
+              <div class="dash-kpi-val mono-num" id="dash-orders-at-risk">47</div>
               <div class="dash-kpi-lbl">Orders at Risk</div>
             </div>
             <div class="dash-kpi-card">
-              <div class="dash-kpi-val mono-num" id="dash-customers-impacted">2</div>
+              <div class="dash-kpi-val mono-num" id="dash-customers-impacted">28</div>
               <div class="dash-kpi-lbl">Customers Impacted</div>
             </div>
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-val mono-num" id="dash-inventory-shortages">4</div>
+              <div class="dash-kpi-lbl">Inventory Shortages</div>
+            </div>
             <div class="dash-kpi-card status-warn-card">
-              <div class="dash-kpi-val mono-num" id="dash-pending-escalations">0</div>
+              <div class="dash-kpi-val mono-num" id="dash-pending-escalations">2</div>
               <div class="dash-kpi-lbl">Pending Escalations</div>
+            </div>
+          </div>
+
+          <!-- Shipment Overview Progress Card -->
+          <div class="dash-panel shipment-overview-panel">
+            <div class="dash-panel-header">
+              <h2>Shipment Lifecycle Overview</h2>
+              <span class="text-muted">Database State Tracking</span>
+            </div>
+            <div class="shipment-stats-row">
+              <div class="ship-stat-box"><span class="stat-num mono-num text-good" id="ship-count-delivered">28</span><span class="stat-lbl">Delivered</span></div>
+              <div class="ship-stat-box"><span class="stat-num mono-num text-primary" id="ship-count-intransit">5</span><span class="stat-lbl">In Transit</span></div>
+              <div class="ship-stat-box"><span class="stat-num mono-num text-warn" id="ship-count-delayed">2</span><span class="stat-lbl">Delayed</span></div>
+              <div class="ship-stat-box"><span class="stat-num mono-num text-critical" id="ship-count-cancelled">0</span><span class="stat-lbl">Cancelled</span></div>
             </div>
           </div>
 
           <div class="dashboard-recent-grid">
             <div class="dash-panel">
               <div class="dash-panel-header">
-                <h2>Quick Disruption Analysis</h2>
-                <button class="btn btn-primary btn-sm" onclick="switchView('disruptions')">Open Analyzer &rarr;</button>
+                <h2>Active Disruptions</h2>
+                <button class="btn btn-secondary btn-sm" onclick="switchView('disruptions')">View All &rarr;</button>
               </div>
-              <p class="text-muted">Analyze unstructured disruption notices, evaluate 4-way response trade-offs, and run grounded policy citations.</p>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>ID</th><th>Source</th><th>Supplier</th><th>Severity</th><th>Status</th><th>Orders</th><th>Action</th></tr>
+                  </thead>
+                  <tbody id="dash-disruptions-tbody">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
+              </div>
             </div>
+
             <div class="dash-panel">
               <div class="dash-panel-header">
-                <h2>Recent Pipeline Actions</h2>
+                <h2>Recent Shipments & Tracking</h2>
+                <button class="btn btn-secondary btn-sm" onclick="switchView('shipments')">View All &rarr;</button>
               </div>
-              <div id="dash-recent-actions-list" class="dash-recent-list">
-                <span class="text-muted">No recent pipeline decisions logged.</span>
+              <div class="table-responsive">
+                <table class="data-table">
+                  <thead>
+                    <tr><th>Shipment</th><th>Supplier</th><th>Eta</th><th>Status</th><th>Tracking</th></tr>
+                  </thead>
+                  <tbody id="dash-shipments-tbody">
+                    <!-- Populated via JS -->
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- View 2: Disruptions Analyze Screen -->
-      <section class="view-pane" id="view-disruptions" style="display: none;">
-        <!-- KPI Hero Strip -->
-        <section class="kpi-hero-strip" aria-label="Operational KPI summary">
-          <div class="kpi-container">
-            <div class="kpi-grid">
-              <div class="kpi-block">
-                <div class="kpi-number mono-num" id="kpi-orders-affected">0</div>
-                <div class="kpi-label">Orders Affected</div>
-              </div>
-              <div class="kpi-block">
-                <div class="kpi-number mono-num" id="kpi-total-risk">0.0</div>
-                <div class="kpi-label">Total Urgency Risk</div>
-              </div>
-              <div class="kpi-block">
-                <div class="kpi-number mono-num" id="kpi-cost-at-risk">$0.00</div>
-                <div class="kpi-label">Est. Cost at Risk</div>
-              </div>
-              <div class="kpi-block">
-                <div class="kpi-number mono-num" id="kpi-nearest-deadline">-</div>
-                <div class="kpi-label">Nearest Deadline</div>
-              </div>
-              <div class="kpi-chart-block">
-                <div class="chart-header"><span class="kpi-label">Urgency Distribution</span></div>
-                <div class="mini-dist-bar" id="mini-dist-bar">
-                  <div class="dist-segment seg-good" id="seg-good" style="width: 33%"></div>
-                  <div class="dist-segment seg-warn" id="seg-warn" style="width: 33%"></div>
-                  <div class="dist-segment seg-critical" id="seg-critical" style="width: 34%"></div>
-                </div>
-                <div class="chart-legend">
-                  <span class="legend-item"><span class="legend-dot status-good-dot"></span><span id="legend-good-count" class="mono-num">0</span> Low</span>
-                  <span class="legend-item"><span class="legend-dot status-warn-dot"></span><span id="legend-warn-count" class="mono-num">0</span> Med</span>
-                  <span class="legend-item"><span class="legend-dot status-critical-dot"></span><span id="legend-critical-count" class="mono-num">0</span> High</span>
-                </div>
-              </div>
-            </div>
+      <!-- View 2: Products Management -->
+      <section class="view-pane" id="view-products" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Product Catalog & Master Data</h2>
+            <p class="text-muted">Manage product specifications, reorder levels, unit costs, and supplier links with relational safety checks.</p>
           </div>
-        </section>
+          <button class="btn btn-primary" id="btn-add-product">+ Add New Product</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Product ID</th><th>SKU</th><th>Product Name</th><th>Category</th><th>Supplier</th><th>Unit Cost</th><th>Reorder Level</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="products-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
 
-        <!-- Pipeline Stage Trace Strip -->
-        <div class="pipeline-trace-strip" aria-label="Pipeline execution progress">
-          <div class="trace-step" id="trace-step-1"><span class="trace-dot"></span><span class="trace-name">Retrieval</span></div>
+      <!-- View 3: Suppliers Management -->
+      <section class="view-pane" id="view-suppliers" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Supplier Directory & Performance</h2>
+            <p class="text-muted">Monitor supplier reliability scores, active lead times, region locations, and disruption history.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-supplier">+ Add Supplier</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Supplier ID</th><th>Supplier Name</th><th>Contact Person</th><th>Email</th><th>Location</th><th>Reliability</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="suppliers-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 4: Warehouses Management -->
+      <section class="view-pane" id="view-warehouses" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Regional Warehouses & Facilities</h2>
+            <p class="text-muted">Track facility capacities, current throughput utilization, and inventory allocation nodes.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-warehouse">+ Add Warehouse</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Warehouse ID</th><th>Facility Name</th><th>Location</th><th>Total Capacity</th><th>Utilization</th><th>Status</th></tr>
+              </thead>
+              <tbody id="warehouses-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 5: Inventory Management -->
+      <section class="view-pane" id="view-inventory" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Inventory Stock & Stock Coverage</h2>
+            <p class="text-muted">Stock Coverage = Current Stock / Daily Demand (Calculated deterministically by Python logic).</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-inventory">+ Adjust Stock</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Product SKU</th><th>Product Name</th><th>Warehouse</th><th>Current Stock</th><th>Daily Demand</th><th>Safety Stock</th><th>Coverage (Days)</th><th>Health Status</th></tr>
+              </thead>
+              <tbody id="inventory-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 6: Shipments Management -->
+      <section class="view-pane" id="view-shipments" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Shipment Tracking & Lifecycle</h2>
+            <p class="text-muted">Lifecycle Statuses: PLANNED, IN TRANSIT, DELAYED, OUT FOR DELIVERY, DELIVERED, CANCELLED.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-shipment">+ Create Shipment</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Shipment ID</th><th>Supplier</th><th>Product</th><th>Quantity</th><th>Origin</th><th>Destination</th><th>Expected Delivery</th><th>Actual Delivery</th><th>Status</th><th>Timeline</th></tr>
+              </thead>
+              <tbody id="shipments-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 7: Orders Management -->
+      <section class="view-pane" id="view-orders" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Customer Orders Ledger</h2>
+            <p class="text-muted">Pending and confirmed orders connected to customers, products, stock allocations, and shipments.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-order">+ Create Order</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Order ID</th><th>Customer</th><th>Product</th><th>Quantity</th><th>Order Date</th><th>Promised Date</th><th>Priority</th><th>Status</th></tr>
+              </thead>
+              <tbody id="orders-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 8: Customers Management -->
+      <section class="view-pane" id="view-customers" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Customer Priority & Account Directory</h2>
+            <p class="text-muted">Customer Criticality tiers: CRITICAL (VIP), HIGH, NORMAL used for deterministic priority ranking.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-customer">+ Add Customer</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Customer ID</th><th>Name / Contact</th><th>Company</th><th>Email</th><th>Tier / Criticality</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="customers-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 9: Disruptions Management -->
+      <section class="view-pane" id="view-disruptions" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Disruption Events & Analyzer</h2>
+            <p class="text-muted">Log of received disruption notices, severity rankings, and AI pipeline execution triggers.</p>
+          </div>
+          <button class="btn btn-primary btn-lg" onclick="switchView('impact')">+ Analyze New Disruption Notice</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Disruption ID</th><th>Received Time</th><th>Source</th><th>Supplier / Entity</th><th>Severity</th><th>Status</th><th>Orders Impacted</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="disruptions-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 10: AI Problem Analysis -->
+      <section class="view-pane" id="view-ai-analysis" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>AI Problem Analysis & Diagnostic Dossier</h2>
+            <p class="text-muted">Natural-language synthesis grounded strictly in relational database operational numbers.</p>
+          </div>
+        </div>
+        <div class="ai-analysis-container grid-layout-2">
+          <div class="dash-panel">
+            <h3>Problem Summary</h3>
+            <p id="ai-prob-summary" class="analysis-prose">Loading AI analysis summary...</p>
+            
+            <h3>Reported Root Cause</h3>
+            <p id="ai-prob-cause" class="analysis-prose">-</p>
+
+            <h3>Unknown Information & Uncertainties</h3>
+            <ul id="ai-prob-unknowns" class="analysis-list"></ul>
+          </div>
+
+          <div class="dash-panel">
+            <h3>Operational Impact & Risk</h3>
+            <div class="kpi-mini-grid">
+              <div class="kpi-block"><div class="kpi-number mono-num text-critical" id="ai-risk-orders">47</div><div class="kpi-label">Orders at Risk</div></div>
+              <div class="kpi-block"><div class="kpi-number mono-num text-warn" id="ai-risk-cust">28</div><div class="kpi-label">Customers Impacted</div></div>
+            </div>
+
+            <h3>Recommended Field Investigation</h3>
+            <ol id="ai-prob-investigation" class="analysis-list"></ol>
+
+            <h3>Relevant Policy Grounding</h3>
+            <div id="ai-policy-citations" class="policy-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 11: Impact Analysis (10-Step Pipeline Screen) -->
+      <section class="view-pane" id="view-impact" style="display: none;">
+        <div class="pipeline-trace-strip">
+          <div class="trace-step" id="trace-step-1"><span class="trace-dot"></span><span class="trace-name">01 Notice</span></div>
           <span class="trace-arrow">&rarr;</span>
-          <div class="trace-step" id="trace-step-2"><span class="trace-dot"></span><span class="trace-name">Resolve</span></div>
+          <div class="trace-step" id="trace-step-2"><span class="trace-dot"></span><span class="trace-name">02 Understand</span></div>
           <span class="trace-arrow">&rarr;</span>
-          <div class="trace-step" id="trace-step-3"><span class="trace-dot"></span><span class="trace-name">Graph</span></div>
+          <div class="trace-step" id="trace-step-3"><span class="trace-dot"></span><span class="trace-name">03 Matching</span></div>
           <span class="trace-arrow">&rarr;</span>
-          <div class="trace-step" id="trace-step-4"><span class="trace-dot"></span><span class="trace-name">Rank</span></div>
+          <div class="trace-step" id="trace-step-4"><span class="trace-dot"></span><span class="trace-name">04 Contradiction</span></div>
           <span class="trace-arrow">&rarr;</span>
-          <div class="trace-step" id="trace-step-5"><span class="trace-dot"></span><span class="trace-name">Narrate</span></div>
+          <div class="trace-step" id="trace-step-5"><span class="trace-dot"></span><span class="trace-name">05 Impact</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-6"><span class="trace-dot"></span><span class="trace-name">06 Priority</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-7"><span class="trace-dot"></span><span class="trace-name">07 Options</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-8"><span class="trace-dot"></span><span class="trace-name">08 Recommend</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-9"><span class="trace-dot"></span><span class="trace-name">09 Evidence</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-10"><span class="trace-dot"></span><span class="trace-name">10 Decision</span></div>
         </div>
 
-        <!-- Main Layout -->
         <main class="grid-layout">
-          <!-- Left Panel -->
+          <!-- Input Panel -->
           <aside class="panel-input">
             <div class="form-group">
               <label for="sample-notice-select" class="form-label">Sample disruption scenario</label>
               <select id="sample-notice-select" class="form-select">
-                <option value="">Select a pre-loaded scenario...</option>
+                <option value="">Select pre-loaded scenario...</option>
               </select>
             </div>
 
             <div class="form-group">
-              <label for="notice-textarea" class="form-label">Disruption notice text</label>
-              <textarea id="notice-textarea" class="form-textarea" placeholder="Paste disruption notice text..."></textarea>
-              <span class="keyboard-hint">Press <kbd id="cmd-key-label">Ctrl</kbd>+<kbd>Enter</kbd> to analyze notice</span>
+              <label for="notice-textarea" class="form-label">Unstructured disruption notice text</label>
+              <textarea id="notice-textarea" class="form-textarea" placeholder="ABC Components has informed us that shipment SHP102 containing Motor-X will be delayed by 7 days due to transportation issues..."></textarea>
+              <span class="keyboard-hint">Press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to execute 10-step AI pipeline</span>
             </div>
 
-            <div class="form-group">
-              <button class="btn btn-primary btn-block" id="btn-analyze">
-                <span class="spinner" id="analyze-spinner" style="display:none;"></span>
-                <span id="btn-analyze-text">Run impact pipeline</span>
-              </button>
-            </div>
-
-            <div class="scenario-info-box" id="notice-meta-card" style="display:none;">
-              <div class="info-row"><span class="info-label">Category:</span><span class="info-value" id="meta-category">-</span></div>
-              <div class="info-desc" id="meta-desc"></div>
-            </div>
+            <button class="btn btn-primary btn-block btn-lg" id="btn-analyze">
+              <span class="spinner" id="analyze-spinner" style="display:none;"></span>
+              <span id="btn-analyze-text">Execute 10-Step AI Pipeline &rarr;</span>
+            </button>
           </aside>
 
-          <!-- Right Panel -->
+          <!-- Results Panel -->
           <section class="panel-results">
-            <!-- Empty State -->
             <div class="empty-state" id="empty-state">
               <h2>Ready for disruption analysis</h2>
-              <p>Select a scenario or paste notice text on the left, then press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.</p>
+              <p>Select a pre-loaded notice or paste custom text on the left, then click <strong>Execute 10-Step AI Pipeline</strong>.</p>
             </div>
 
-            <!-- Skeleton Loading -->
             <div class="skeleton-container" id="skeleton-loading-container" style="display:none;">
               <div class="skeleton-row"><div class="skeleton-block sk-large"></div></div>
-              <div class="skeleton-row"><div class="skeleton-block sk-large"></div></div>
+              <div class="skeleton-row"><div class="skeleton-block sk-med"></div></div>
+              <div class="skeleton-row"><div class="skeleton-block sk-small"></div></div>
             </div>
 
-            <!-- Banner for No Impact / Ambiguous / Contradiction -->
-            <div class="outcome-banner" id="no-impact-alert" style="display:none;">
-              <div class="banner-body">
-                <div class="banner-header">
-                  <h2 id="alert-title">Analysis Result</h2>
-                  <span class="badge" id="callout-badge-text">Result</span>
-                </div>
-                <p id="alert-body" class="banner-desc"></p>
-                <div class="banner-meta" id="alert-tags"></div>
-                <div id="ambiguous-candidates-wrap" style="display:none; margin-top: 16px;"></div>
-                <div id="contradiction-action-wrap" style="display:none; margin-top: 16px;">
-                  <button class="btn btn-escalate" onclick="escalateCurrentNotice()">Escalate Incident to Manager</button>
-                </div>
+            <div class="results-content" id="results-content" style="display:none;">
+              <!-- Impact Chain Visual Diagram -->
+              <div class="impact-chain-card" id="impact-chain-card">
+                <div class="card-header"><h3>Visual Impact Chain Traversal</h3></div>
+                <div class="chain-diagram-flex" id="chain-nodes-row"></div>
               </div>
-            </div>
 
-            <!-- Pipeline Execution & Narration Details -->
-            <div class="execution-block" id="pipeline-details-container" style="display:none;">
-              <div class="headline-bar" id="headline-text">Headline Summary</div>
-
-              <div class="stage-summary-grid">
-                <div class="summary-card">
-                  <div class="card-label">Stage 1: Entity Resolution</div>
-                  <div class="card-value" id="stage1-summary">-</div>
+              <!-- Recommendation Card -->
+              <div class="narration-card" id="narration-card">
+                <div class="narration-header">
+                  <div class="stage-tag">RECOMMENDED ACTION PLAN</div>
+                  <button class="btn btn-secondary btn-sm" id="btn-why-evidence">Why? Show Evidence &rarr;</button>
                 </div>
-                <div class="summary-card">
-                  <div class="card-label">Stage 2: Graph Traversal</div>
-                  <div class="card-value" id="stage2-summary">-</div>
+                <h3 class="narration-headline" id="narration-headline">-</h3>
+                <div class="typewriter-text" id="narration-body"></div>
+
+                <div class="human-decision-bar">
+                  <span class="decision-lbl">HUMAN DECISION REQUIRED:</span>
+                  <div class="decision-btns-group">
+                    <button class="btn btn-success" id="btn-approve-action">✓ APPROVE ACTION</button>
+                    <button class="btn btn-danger" id="btn-reject-action">✕ REJECT ACTION</button>
+                    <button class="btn btn-warning" id="btn-escalate-action">↗ ESCALATE TO HUMAN</button>
+                  </div>
                 </div>
               </div>
 
-              <!-- Document Policy Citations -->
-              <div class="policy-citations-block" id="policy-citations-wrap" style="display:none;">
-                <div class="block-heading">Document Policy Citations</div>
-                <div id="policy-citations-list" class="policy-list"></div>
-              </div>
-
-              <!-- Relational Impact Chain Visual -->
-              <div class="impact-chain-block" id="impact-chain-wrap" style="display:none;">
-                <div class="block-heading">Relational Impact Chain Visual</div>
-                <div id="impact-chain-flow" class="impact-chain-flow"></div>
-              </div>
-
-              <!-- Decision Timeline Container -->
-              <div class="timeline-block" id="decision-timeline-wrap" style="display:none;">
-                <div class="block-heading">Decision Timeline Audit Trail</div>
-                <div id="decision-timeline-list" class="timeline-list"></div>
-              </div>
-            </div>
-
-            <!-- Affected Orders Manifest & Side-by-Side What-If Comparison -->
-            <div class="manifest-container" id="action-cards-section" style="display:none;">
-              <div class="manifest-top">
-                <div>
-                  <h2>Affected order manifest & What-If comparison</h2>
-                  <span class="manifest-sub">Compare all 4 response options side-by-side per order before approving.</span>
+              <!-- Affected Orders Table -->
+              <div class="affected-orders-panel">
+                <div class="panel-header">
+                  <h3>Ranked Customer Orders At Risk</h3>
+                  <span class="text-muted">Deterministic Priority Ranking</span>
                 </div>
-                <button class="btn btn-secondary" id="btn-export-pdf" style="display:none;">Export action plan</button>
+                <div class="table-responsive">
+                  <table class="data-table">
+                    <thead>
+                      <tr><th>Rank</th><th>Order ID</th><th>Customer</th><th>SKU</th><th>Shortfall</th><th>Deadline</th><th>Urgency</th><th>Recommended Mitigation</th></tr>
+                    </thead>
+                    <tbody id="affected-orders-tbody"></tbody>
+                  </table>
+                </div>
               </div>
-              <div class="manifest-rows" id="action-cards-list"></div>
             </div>
           </section>
         </main>
       </section>
 
-      <!-- View 3: Escalations Manager Screen -->
-      <section class="view-pane" id="view-escalations" style="display: none;">
-        <div class="escalations-container">
-          <div class="escalations-header">
-            <h2>Pending Incident Escalations</h2>
-            <p class="text-muted">Review ambiguous matches, critical data contradictions, and human-escalated disruption notices.</p>
+      <!-- View 12: Response Planner (What-If 4-Option Screen) -->
+      <section class="view-pane" id="view-planner" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>What-If Response Planner & Trade-off Comparison</h2>
+            <p class="text-muted">Deterministic score calculation: Option Score = w_orders*Protected + w_customers*Protected - w_cost*Cost - w_delay*Delay - w_risk*Risk.</p>
           </div>
-          <div id="escalations-list" class="escalations-list-container">
-            <div class="empty-state">
-              <h3>No active escalations</h3>
-              <p class="text-muted">All disruption notices have been resolved or confirmed.</p>
+        </div>
+        <div class="what-if-grid" id="what-if-options-grid">
+          <!-- 4 Option Cards populated via JS -->
+        </div>
+      </section>
+
+      <!-- View 13: Evidence Dossier -->
+      <section class="view-pane" id="view-evidence" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Evidence Dossier & Calculation Provenance</h2>
+            <p class="text-muted">Audit trail proving zero hallucinated business numbers. Grounded in response_guidelines.md.</p>
+          </div>
+        </div>
+        <div class="dash-panel">
+          <div class="evidence-section">
+            <h3>Calculated Metrics & Database Records</h3>
+            <div id="evidence-provenance-list" class="evidence-list"></div>
+          </div>
+          <div class="evidence-section">
+            <h3>Policy Document Grounding (`response_guidelines.md`)</h3>
+            <div id="evidence-policy-text" class="policy-prose-box"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 14: Notifications / Email -->
+      <section class="view-pane" id="view-notifications" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Notification & Communication Center</h2>
+            <p class="text-muted">Compose operational delay advisories, supplier expedite requests, and internal escalations.</p>
+          </div>
+        </div>
+        <div class="grid-layout-2">
+          <div class="dash-panel">
+            <h3>Email & Advisory Composer</h3>
+            <form id="email-composer-form">
+              <div class="form-group">
+                <label for="notif-template-select" class="form-label">Apply Template</label>
+                <select id="notif-template-select" class="form-select">
+                  <option value="">-- Select Template --</option>
+                  <option value="supplier_disruption_notice">Supplier Disruption Notice</option>
+                  <option value="customer_delay_notification">Customer Delay Notification</option>
+                  <option value="shipment_status_update">Shipment Status Update</option>
+                  <option value="management_escalation">Management Escalation</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="notif-recipient" class="form-label">Recipient Email</label>
+                <input type="email" id="notif-recipient" class="form-input" placeholder="customer@company.com" required>
+              </div>
+              <div class="form-group">
+                <label for="notif-subject" class="form-label">Subject</label>
+                <input type="text" id="notif-subject" class="form-input" placeholder="Subject line..." required>
+              </div>
+              <div class="form-group">
+                <label for="notif-reason" class="form-label">Reason / Category</label>
+                <input type="text" id="notif-reason" class="form-input" value="Disruption Response Advisory" required>
+              </div>
+              <div class="form-group">
+                <label for="notif-body" class="form-label">Message Body</label>
+                <textarea id="notif-body" class="form-textarea" rows="6" placeholder="Message content..." required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary btn-block">Send Operational Notification (Internal/Demo Log) &rarr;</button>
+            </form>
+          </div>
+
+          <div class="dash-panel">
+            <h3>Sent Notifications Audit Log</h3>
+            <div class="table-responsive">
+              <table class="data-table">
+                <thead>
+                  <tr><th>ID</th><th>Recipient</th><th>Subject</th><th>Reason</th><th>Sent At</th><th>Status</th></tr>
+                </thead>
+                <tbody id="notifications-sent-tbody"></tbody>
+              </table>
             </div>
           </div>
         </div>
       </section>
+
+      <!-- View 15: Reports & PDF -->
+      <section class="view-pane" id="view-reports" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Monthly Performance Reports & PDF Export</h2>
+            <p class="text-muted">Generate executive supply chain reports derived deterministically from database records.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-generate-report">+ Generate Monthly Report (September 2026)</button>
+        </div>
+        <div class="dash-panel">
+          <h3>Generated Report History</h3>
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Report ID</th><th>Period</th><th>Title</th><th>Total Shipments</th><th>Orders at Risk</th><th>Generated By</th><th>Generated Date</th><th>Download</th></tr>
+              </thead>
+              <tbody id="reports-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 16: Escalations -->
+      <section class="view-pane" id="view-escalations" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Escalation Management Console</h2>
+            <p class="text-muted">Review incidents requiring human intervention due to ambiguous entities, contradictions, or high risk.</p>
+          </div>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>Escalation ID</th><th>Reason / Trigger</th><th>Severity</th><th>Assigned To</th><th>Created Date</th><th>Status</th><th>Action</th></tr>
+              </thead>
+              <tbody id="escalations-table-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 17: Admin Management -->
+      <section class="view-pane" id="view-admin" style="display: none;">
+        <div class="module-header">
+          <div>
+            <h2>Admin User Management & Role Control</h2>
+            <p class="text-muted">Manage system operator accounts, assign ADMIN or OPERATIONS MANAGER roles safely.</p>
+          </div>
+          <button class="btn btn-primary" id="btn-add-user">+ Add User Account</button>
+        </div>
+        <div class="dash-panel">
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr><th>User ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
+              </thead>
+              <tbody id="admin-users-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
     </div>
   </div>
 
-  <!-- Evidence / "Why?" Slide-Over Panel -->
-  <div class="slideover-backdrop" id="evidence-slideover-backdrop" style="display:none;">
-    <div class="slideover-pane" id="evidence-slideover">
-      <div class="slideover-header">
-        <div>
-          <span class="slideover-tag">Mathematical Proof & Evidence</span>
-          <h2 id="evidence-slideover-title">Metric Evidence Calculation</h2>
-        </div>
-        <button class="btn-close" id="btn-close-evidence" aria-label="Close slide-over">&times;</button>
-      </div>
-      <div class="slideover-body">
-        <div class="evidence-box">
-          <div class="field-pair"><span class="field-key">Source Table:</span><span class="field-val mono-num" id="ev-source-table">-</span></div>
-          <div class="field-pair"><span class="field-key">Record IDs:</span><span class="field-val mono-num" id="ev-record-ids">-</span></div>
-          <div class="field-pair"><span class="field-key">Formula String:</span><span class="field-val mono-num" id="ev-formula-string">-</span></div>
-          <div class="field-pair"><span class="field-key">Calculated Result:</span><span class="field-val mono-num" id="ev-calculated-result">-</span></div>
-        </div>
-        <div class="raw-json-wrap">
-          <span class="field-key">Raw Inputs & Intermediate Values</span>
-          <pre id="ev-raw-values-json" class="json-code"></pre>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Record Citation Slide-Over Panel -->
-  <div class="slideover-backdrop" id="slideover-backdrop" style="display:none;">
-    <div class="slideover-pane" id="record-slideover">
-      <div class="slideover-header">
-        <div>
-          <span class="slideover-tag">Grounding proof</span>
-          <h2 id="slideover-title">Record details</h2>
-        </div>
-        <button class="btn-close" id="btn-close-slideover" aria-label="Close slide-over">&times;</button>
-      </div>
-      <div class="slideover-body">
-        <!-- Shipment Step Timeline (Rendered for Shipment records) -->
-        <div class="shipment-timeline-wrap" id="shipment-timeline-wrap" style="display:none; margin-bottom: 20px;">
-          <span class="field-key" style="margin-bottom: 8px; display:block;">Shipment Lifecycle Timeline</span>
-          <div class="shipment-step-timeline" id="shipment-step-timeline"></div>
-        </div>
-        <div class="record-fields-grid" id="slideover-fields"></div>
-        <div class="raw-json-wrap">
-          <span class="field-key">Raw record JSON</span>
-          <pre id="slideover-raw-json" class="json-code"></pre>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Audit Log Modal -->
-  <div class="modal-backdrop" id="audit-modal" style="display:none;">
-    <div class="modal-window">
+  <!-- Shipment Tracking Modal -->
+  <div class="modal-overlay" id="tracking-modal-overlay" style="display:none;">
+    <div class="modal-card">
       <div class="modal-header">
-        <h2>Operator decision & timeline log</h2>
-        <button class="btn-close" id="btn-close-audit" aria-label="Close modal">&times;</button>
+        <h3>Shipment Tracking Timeline — <span id="track-modal-ship-id">SHP102</span></h3>
+        <button class="btn-close-modal" onclick="closeModal('tracking-modal-overlay')">&times;</button>
       </div>
       <div class="modal-body">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Time</th>
-              <th>Order / Ref</th>
-              <th>Stage / Action</th>
-              <th>Status</th>
-              <th>Details / Notes</th>
-            </tr>
-          </thead>
-          <tbody id="audit-table-body">
-            <tr><td colspan="6" class="text-muted text-center">No decisions logged in this session.</td></tr>
-          </tbody>
-        </table>
+        <div class="shipment-timeline-stepper" id="shipment-timeline-stepper"></div>
       </div>
     </div>
   </div>
 
-  <!-- Data Index Modal -->
-  <div class="modal-backdrop" id="index-modal" style="display:none;">
-    <div class="modal-window wide">
+  <!-- Generic Delete Confirmation Modal -->
+  <div class="modal-overlay" id="delete-modal-overlay" style="display:none;">
+    <div class="modal-card modal-sm">
       <div class="modal-header">
-        <h2>System data index inspector</h2>
-        <button class="btn-close" id="btn-close-index" aria-label="Close modal">&times;</button>
+        <h3>Confirm Safe Deletion</h3>
+        <button class="btn-close-modal" onclick="closeModal('delete-modal-overlay')">&times;</button>
       </div>
       <div class="modal-body">
-        <div class="tab-strip">
-          <button class="tab-btn active" data-tab="tab-suppliers">Suppliers</button>
-          <button class="tab-btn" data-tab="tab-shipments">Shipments</button>
-          <button class="tab-btn" data-tab="tab-stock">Stock inventory</button>
-          <button class="tab-btn" data-tab="tab-orders">Customer orders</button>
+        <p id="delete-confirm-text">Are you sure you want to delete this record?</p>
+        <div class="delete-warning-box" id="delete-warning-box">
+          <strong>Relational Integrity Guard:</strong> Deletion will be blocked if active relationships exist.
         </div>
-        <pre id="data-index-json" class="json-code">Loading index data...</pre>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('delete-modal-overlay')">Cancel</button>
+        <button class="btn btn-danger" id="btn-confirm-delete-action">Delete Record</button>
       </div>
     </div>
   </div>
 
-  <div class="toast-container" id="toast-container"></div>
+  <!-- Audit Log Side Drawer -->
+  <div class="drawer-overlay" id="audit-drawer-overlay" style="display:none;">
+    <aside class="drawer-card">
+      <div class="drawer-header">
+        <h3>Pipeline Audit Log</h3>
+        <button class="btn-close-modal" onclick="closeDrawer('audit-drawer-overlay')">&times;</button>
+      </div>
+      <div class="drawer-body" id="audit-log-body">
+        <span class="text-muted">No timeline events logged yet.</span>
+      </div>
+    </aside>
+  </div>
+
   <script src="/static/app.js"></script>
 </body>
 </html>
