@@ -14,7 +14,7 @@
     <!-- Slim Header Bar -->
     <header class="app-header">
       <div class="header-brand">
-        <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <svg class="duotone-icon chrome-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         <h1 class="header-title">Supply Chain Disruption Assistant</h1>
         <span class="header-track">TRACK_ID=PS08</span>
       </div>
@@ -25,15 +25,56 @@
           <span id="status-text">Checking API status...</span>
         </div>
         <button class="btn btn-secondary" id="btn-open-audit">
-          <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Audit log (<span id="audit-count" class="mono-num">0</span>)
         </button>
         <button class="btn btn-secondary" id="btn-open-index">
-          <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
           Data index
         </button>
       </div>
     </header>
+
+    <!-- KPI Hero Strip (Top of page) -->
+    <section class="kpi-hero-strip" aria-label="Operational KPI summary">
+      <div class="kpi-container">
+        <div class="kpi-grid">
+          <div class="kpi-block">
+            <div class="kpi-number mono-num" id="kpi-orders-affected">0</div>
+            <div class="kpi-label">Orders Affected</div>
+          </div>
+          <div class="kpi-block">
+            <div class="kpi-number mono-num" id="kpi-total-risk">0.0</div>
+            <div class="kpi-label">Total Urgency-Weighted Risk</div>
+          </div>
+          <div class="kpi-block">
+            <div class="kpi-number mono-num" id="kpi-cost-at-risk">$0.00</div>
+            <div class="kpi-label">Est. Cost at Risk</div>
+          </div>
+          <div class="kpi-block">
+            <div class="kpi-number mono-num" id="kpi-nearest-deadline">-</div>
+            <div class="kpi-label">Nearest Deadline</div>
+          </div>
+
+          <!-- Urgency Distribution Mini-Chart Inline -->
+          <div class="kpi-chart-block">
+            <div class="chart-header">
+              <span class="kpi-label">Urgency Distribution</span>
+            </div>
+            <div class="mini-dist-bar" id="mini-dist-bar">
+              <div class="dist-segment seg-good" id="seg-good" style="width: 33%" title="Low Urgency (0-40): 0 orders"></div>
+              <div class="dist-segment seg-warn" id="seg-warn" style="width: 33%" title="Medium Urgency (41-70): 0 orders"></div>
+              <div class="dist-segment seg-critical" id="seg-critical" style="width: 34%" title="High Urgency (71-100): 0 orders"></div>
+            </div>
+            <div class="chart-legend">
+              <span class="legend-item"><span class="legend-dot status-good-dot"></span><span id="legend-good-count" class="mono-num">0</span> Low</span>
+              <span class="legend-item"><span class="legend-dot status-warn-dot"></span><span id="legend-warn-count" class="mono-num">0</span> Med</span>
+              <span class="legend-item"><span class="legend-dot status-critical-dot"></span><span id="legend-critical-count" class="mono-num">0</span> High</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- Slim Pipeline Stage Trace Strip -->
     <div class="pipeline-trace-strip" aria-label="Pipeline execution progress">
@@ -100,7 +141,7 @@
         <!-- Initial Empty State -->
         <div class="empty-state" id="empty-state">
           <div class="empty-icon-wrap">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--accent-primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </div>
           <h2>Ready for disruption analysis</h2>
           <p>Select a scenario or paste text on the left, then run the pipeline to evaluate supply chain impacts and mitigation options.</p>
@@ -108,8 +149,15 @@
 
         <!-- Full-Width Banner ONLY for No Impact / No Match -->
         <div class="outcome-banner" id="no-impact-alert" style="display:none;">
-          <div class="banner-icon-wrap">
-            <svg id="banner-svg-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          <!-- Custom Inline Geometric SVG Illustration -->
+          <div class="banner-illustration-wrap">
+            <svg class="no-impact-illustration" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect x="6" y="14" width="36" height="26" rx="4" fill="#4F46E5" fill-opacity="0.08" stroke="#4F46E5" stroke-width="2"/>
+              <path d="M6 22H42" stroke="#4F46E5" stroke-width="2" stroke-linecap="round"/>
+              <path d="M24 14V40" stroke="#4F46E5" stroke-width="2" stroke-dasharray="2 2"/>
+              <circle cx="36" cy="12" r="10" fill="#16A34A" fill-opacity="0.12" stroke="#16A34A" stroke-width="2"/>
+              <path d="M31 12L34.5 15.5L41 9" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
           <div class="banner-body">
             <div class="banner-header">

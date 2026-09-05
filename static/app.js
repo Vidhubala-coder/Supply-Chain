@@ -17,6 +17,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const statusPill = document.getElementById("system-status-pill");
   const statusText = document.getElementById("status-text");
 
+  // KPI Strip Elements
+  const kpiOrdersAffected = document.getElementById("kpi-orders-affected");
+  const kpiTotalRisk = document.getElementById("kpi-total-risk");
+  const kpiCostAtRisk = document.getElementById("kpi-cost-at-risk");
+  const kpiNearestDeadline = document.getElementById("kpi-nearest-deadline");
+
+  const segGood = document.getElementById("seg-good");
+  const segWarn = document.getElementById("seg-warn");
+  const segCritical = document.getElementById("seg-critical");
+  const legendGoodCount = document.getElementById("legend-good-count");
+  const legendWarnCount = document.getElementById("legend-warn-count");
+  const legendCriticalCount = document.getElementById("legend-critical-count");
+
   const emptyState = document.getElementById("empty-state");
   const noImpactAlert = document.getElementById("no-impact-alert");
   const alertTitle = document.getElementById("alert-title");
@@ -224,6 +237,8 @@ document.addEventListener("DOMContentLoaded", () => {
       traceStep4.classList.add("unfilled");
       traceStep5.classList.add("unfilled");
 
+      updateKpiHeroStrip([], 0);
+
       noImpactAlert.style.display = "flex";
       noImpactAlert.className = "outcome-banner status-warn-banner";
       calloutBadgeText.textContent = "No match identified";
@@ -238,6 +253,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Full pipeline completion
     [traceStep1, traceStep2, traceStep3, traceStep4, traceStep5].forEach(s => s.classList.add("active"));
+
+    const affectedOrders = stage4.affected_orders || [];
+    updateKpiHeroStrip(affectedOrders, stage2.total_at_risk_value || 0);
 
     if (stage4.no_impact || (stage3.total_orders_affected === 0)) {
       noImpactAlert.style.display = "flex";
@@ -256,7 +274,77 @@ document.addEventListener("DOMContentLoaded", () => {
       stage1Summary.textContent = `${(stage1.candidate_matches || []).length} entity candidate(s) matched (${stage1.notice_summary || ''}).`;
       stage2Summary.textContent = `${stage2.total_orders_affected || 0} order(s) affected across ${(stage2.affected_skus || []).length} SKU(s). Total at risk: $${(stage2.total_at_risk_value || 0).toLocaleString()}.`;
 
-      renderManifestRows(stage4.affected_orders || []);
+      renderManifestRows(affectedOrders);
+    }
+  }
+
+  function updateKpiHeroStrip(orders, totalAtRiskValue) {
+    const count = orders.length;
+    kpiOrdersAffected.textContent = count;
+
+    let sumRisk = 0;
+    let sumCost = 0;
+    let minDays = 999;
+    let countGood = 0;
+    let countWarn = 0;
+    let countCritical = 0;
+
+    orders.forEach(o => {
+      const score = o.urgency_score || 0;
+      sumRisk += score;
+      if (score <= 40) countGood++;
+      else if (score <= 70) countWarn++;
+      else countCritical++;
+
+      // Compute cost at risk from recommended option cost
+      const recOpt = (o.options || []).find(opt => opt.action === o.recommended_option);
+      if (recOpt && recOpt.cost_estimate) {
+        sumCost += recOpt.cost_estimate;
+      }
+
+      if (o.days_late_estimate && o.days_late_estimate > 0 && o.days_late_estimate < minDays) {
+        minDays = o.days_late_estimate;
+      }
+    });
+
+    kpiTotalRisk.textContent = sumRisk.toFixed(1);
+    kpiCostAtRisk.textContent = `$${sumCost.toFixed(2)}`;
+    
+    // Severity color formatting for cost at risk
+    if (sumCost > 500) {
+      kpiCostAtRisk.className = "kpi-number mono-num status-critical";
+    } else if (sumCost > 0) {
+      kpiCostAtRisk.className = "kpi-number mono-num status-warn";
+    } else {
+      kpiCostAtRisk.className = "kpi-number mono-num";
+    }
+
+    kpiNearestDeadline.textContent = minDays !== 999 ? `${minDays} days` : "-";
+
+    // Urgency distribution mini-chart calculation
+    legendGoodCount.textContent = countGood;
+    legendWarnCount.textContent = countWarn;
+    legendCriticalCount.textContent = countCritical;
+
+    if (count === 0) {
+      segGood.style.width = "33%";
+      segWarn.style.width = "33%";
+      segCritical.style.width = "34%";
+      segGood.title = "Low Urgency: 0";
+      segWarn.title = "Medium Urgency: 0";
+      segCritical.title = "High Urgency: 0";
+    } else {
+      const pctGood = Math.round((countGood / count) * 100);
+      const pctWarn = Math.round((countWarn / count) * 100);
+      const pctCrit = Math.max(0, 100 - pctGood - pctWarn);
+
+      segGood.style.width = `${pctGood}%`;
+      segWarn.style.width = `${pctWarn}%`;
+      segCritical.style.width = `${pctCrit}%`;
+
+      segGood.title = `Low Urgency (0-40): ${countGood} order(s)`;
+      segWarn.title = `Medium Urgency (41-70): ${countWarn} order(s)`;
+      segCritical.title = `High Urgency (71-100): ${countCritical} order(s)`;
     }
   }
 
@@ -266,13 +354,20 @@ document.addEventListener("DOMContentLoaded", () => {
 
     orders.forEach(ord => {
       const row = document.createElement("div");
-      row.className = "manifest-row";
-      row.dataset.orderId = ord.order_id;
-
+      
       const score = ord.urgency_score;
       let scoreColorClass = "status-good";
-      if (score > 70) scoreColorClass = "status-critical";
-      else if (score > 40) scoreColorClass = "status-warn";
+      let statusRowClass = "status-good-row";
+      if (score > 70) {
+        scoreColorClass = "status-critical";
+        statusRowClass = "status-critical-row";
+      } else if (score > 40) {
+        scoreColorClass = "status-warn";
+        statusRowClass = "status-warn-row";
+      }
+
+      row.className = `manifest-row ${statusRowClass}`;
+      row.dataset.orderId = ord.order_id;
 
       const isVip = ord.customer_tier === "VIP";
       const tierBadge = isVip
@@ -298,6 +393,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const approveActionText = getActionText(ord.recommended_option);
 
       row.innerHTML = `
+        <div class="row-status-bar"></div>
         <div class="cell-order">
           <a class="order-id-link" onclick="inspectRecord('${ord.order_id}')">${ord.order_id}</a>
           <span class="customer-name">${ord.customer_name || ord.order_id}</span>
@@ -314,8 +410,11 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="row-actions-bar">
             <span class="recommendation-reason">Reason: ${ord.recommendation_reason}</span>
             <div class="action-buttons-group">
-              <button class="btn btn-approve" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'APPROVED')">${approveActionText}</button>
-              <button class="btn btn-reject" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'REJECTED')">Reject option</button>
+              <button class="btn btn-approve" id="btn-approve-${ord.order_id}" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'APPROVED')">
+                <svg class="btn-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 8 12 12 14 14"/></svg>
+                <span class="btn-text">${approveActionText}</span>
+              </button>
+              <button class="btn btn-reject" id="btn-reject-${ord.order_id}" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'REJECTED')">Reject option</button>
             </div>
           </div>
         </div>
@@ -389,7 +488,19 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const row = document.querySelector(`.manifest-row[data-order-id="${orderId}"]`);
       if (row) {
-        row.style.opacity = "0.55";
+        if (decision === "APPROVED") {
+          row.classList.add("approved-row");
+          const approveBtn = document.getElementById(`btn-approve-${orderId}`);
+          if (approveBtn) {
+            approveBtn.classList.add("approved");
+            approveBtn.innerHTML = `
+              <svg class="btn-check-icon" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+              <span>Action approved</span>
+            `;
+          }
+        } else {
+          row.classList.add("rejected-row");
+        }
       }
 
       fetchAuditHistory();
