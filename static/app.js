@@ -50,7 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const traceStep4 = document.getElementById("trace-step-4");
   const traceStep5 = document.getElementById("trace-step-5");
 
-  // Initialize Console
+  // Initialize App
   initHealthCheck();
   initSampleNotices();
   initDataIndex();
@@ -63,14 +63,14 @@ document.addEventListener("DOMContentLoaded", () => {
       if (data.status === "online") {
         statusPill.classList.add("active");
         if (data.gemini_api_configured) {
-          statusText.textContent = "Gemini LLM active";
+          statusText.textContent = "Gemini API connected";
         } else {
           statusText.textContent = "Offline fallback active";
         }
       }
     } catch (e) {
       statusPill.classList.add("offline");
-      statusText.textContent = "System offline";
+      statusText.textContent = "API unreachable";
     }
   }
 
@@ -80,7 +80,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       sampleNotices = data.notices || [];
 
-      sampleSelect.innerHTML = '<option value="">Choose a sample disruption notice...</option>';
+      sampleSelect.innerHTML = '<option value="">Select a pre-loaded scenario...</option>';
       sampleNotices.forEach(n => {
         const opt = document.createElement("option");
         opt.value = n.id;
@@ -113,7 +113,7 @@ document.addEventListener("DOMContentLoaded", () => {
         noticeTextarea.value = match.text;
         metaCategory.textContent = match.category;
         metaDesc.textContent = match.title;
-        noticeMetaCard.style.display = "block";
+        noticeMetaCard.style.display = "flex";
       }
     });
 
@@ -137,9 +137,9 @@ document.addEventListener("DOMContentLoaded", () => {
       indexModal.style.display = "none";
     });
 
-    document.querySelectorAll(".tab-item").forEach(btn => {
+    document.querySelectorAll(".tab-btn").forEach(btn => {
       btn.addEventListener("click", (e) => {
-        document.querySelectorAll(".tab-item").forEach(b => b.classList.remove("active"));
+        document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
         e.target.classList.add("active");
         renderDataIndexTab(e.target.dataset.tab);
       });
@@ -158,7 +158,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resetTraceStrip() {
     [traceStep1, traceStep2, traceStep3, traceStep4, traceStep5].forEach(step => {
-      step.classList.remove("active", "dimmed");
+      step.classList.remove("active", "unfilled");
     });
   }
 
@@ -181,11 +181,10 @@ document.addEventListener("DOMContentLoaded", () => {
     resetTraceStrip();
     traceStep1.classList.add("active");
 
-    // Check prefers-reduced-motion
     const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (!prefersReducedMotion) {
-      await new Promise(r => setTimeout(r, 120));
+      await new Promise(r => setTimeout(r, 100));
       traceStep2.classList.add("active");
     } else {
       traceStep2.classList.add("active");
@@ -200,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const data = await res.json();
       currentPipelineResult = data;
 
-      renderPipelineResult(data, prefersReducedMotion);
+      renderPipelineResult(data);
     } catch (e) {
       alert("Error analyzing disruption notice: " + e.message);
     } finally {
@@ -210,41 +209,39 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  function renderPipelineResult(data, prefersReducedMotion) {
+  function renderPipelineResult(data) {
     const isShortCircuited = data.short_circuited;
     const stage1 = data.stage1 || {};
     const stage2 = data.stage2 || {};
     const stage3 = data.stage3 || {};
     const stage4 = data.stage4 || {};
 
-    // Match found check
     if (!data.match_found || isShortCircuited) {
-      // VISUALLY OBVIOUS SHORT-CIRCUIT: Steps 1 & 2 fill in, Steps 3, 4, 5 stay dimmed!
+      // Short-circuit: Only steps 1 & 2 active; 3, 4, 5 stay unfilled
       traceStep1.classList.add("active");
       traceStep2.classList.add("active");
-      traceStep3.classList.add("dimmed");
-      traceStep4.classList.add("dimmed");
-      traceStep5.classList.add("dimmed");
+      traceStep3.classList.add("unfilled");
+      traceStep4.classList.add("unfilled");
+      traceStep5.classList.add("unfilled");
 
       noImpactAlert.style.display = "flex";
-      noImpactAlert.className = "resolved-callout-card short-circuit";
+      noImpactAlert.className = "outcome-banner status-warn-banner";
       calloutBadgeText.textContent = "No match identified";
       alertTitle.textContent = "No matching distributor record found in database";
       alertBody.textContent = "Disruption notice text was processed through local vector retrieval and Stage 1 entity resolution. No matching supplier, shipment, or stock item was identified in distributor database records.";
       alertTags.innerHTML = `
-        <span>Retrieval similarity score: ${(stage1.retrieval_meta ? stage1.retrieval_meta.best_similarity : 0).toFixed(2)}</span>
+        <span>Retrieval similarity: ${(stage1.retrieval_meta ? stage1.retrieval_meta.best_similarity : 0).toFixed(2)}</span>
         <span>Stage 1 short-circuit executed</span>
       `;
       return;
     }
 
-    // Full match found: activate all steps
+    // Full pipeline completion
     [traceStep1, traceStep2, traceStep3, traceStep4, traceStep5].forEach(s => s.classList.add("active"));
 
-    // Check No Impact vs Impact
     if (stage4.no_impact || (stage3.total_orders_affected === 0)) {
       noImpactAlert.style.display = "flex";
-      noImpactAlert.className = "resolved-callout-card";
+      noImpactAlert.className = "outcome-banner status-good-banner";
       calloutBadgeText.textContent = "Resolved clear";
       alertTitle.textContent = "Zero pending customer orders affected by this disruption";
       alertBody.textContent = stage4.headline || "Disruption notice was matched to supplier records and traced through active shipments and inventory records. Zero pending customer orders are affected because warehouse stock levels are sufficient to cover current demand.";
@@ -259,32 +256,40 @@ document.addEventListener("DOMContentLoaded", () => {
       stage1Summary.textContent = `${(stage1.candidate_matches || []).length} entity candidate(s) matched (${stage1.notice_summary || ''}).`;
       stage2Summary.textContent = `${stage2.total_orders_affected || 0} order(s) affected across ${(stage2.affected_skus || []).length} SKU(s). Total at risk: $${(stage2.total_at_risk_value || 0).toLocaleString()}.`;
 
-      renderLedgerManifest(stage4.affected_orders || []);
+      renderManifestRows(stage4.affected_orders || []);
     }
   }
 
-  function renderLedgerManifest(orders) {
+  function renderManifestRows(orders) {
     actionCardsSection.style.display = "flex";
     actionCardsList.innerHTML = "";
 
     orders.forEach(ord => {
       const row = document.createElement("div");
-      row.className = "ledger-row";
+      row.className = "manifest-row";
       row.dataset.orderId = ord.order_id;
 
-      const isUrgent = ord.urgency_score > 60;
-      const scoreClass = isUrgent ? "urgent" : "steady";
+      const score = ord.urgency_score;
+      let scoreColorClass = "status-good";
+      if (score > 70) scoreColorClass = "status-critical";
+      else if (score > 40) scoreColorClass = "status-warn";
 
-      let optionsHtml = '<div class="inline-options-list">';
+      const isVip = ord.customer_tier === "VIP";
+      const tierBadge = isVip
+        ? '<span class="badge badge-vip">VIP tier</span>'
+        : '<span class="badge">Standard tier</span>';
+
+      let optionsHtml = '<div class="options-collapsible-list">';
       (ord.options || []).forEach(opt => {
         const isRec = opt.action === ord.recommended_option;
         optionsHtml += `
-          <div class="inline-option-item ${isRec ? 'recommended' : ''}">
-            <div class="opt-name">
-              ${formatOptionName(opt.action)}
-              ${isRec ? '<span class="opt-recommended-flag">Recommended</span>' : ''}
+          <div class="option-row-item ${isRec ? 'recommended' : ''}">
+            <div class="opt-title">
+              <span>${formatOptionName(opt.action)}</span>
+              ${isRec ? '<span class="recommended-pill">Recommended</span>' : ''}
             </div>
-            <div class="opt-tradeoff">${opt.tradeoff}</div>
+            <div class="opt-desc">${opt.tradeoff}</div>
+            <div class="opt-metrics">${formatOptionCost(opt)}</div>
           </div>
         `;
       });
@@ -293,24 +298,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const approveActionText = getActionText(ord.recommended_option);
 
       row.innerHTML = `
-        <div class="ledger-cell">
-          <span class="ledger-order-id" onclick="inspectRecord('${ord.order_id}')">${ord.order_id}</span>
+        <div class="cell-order">
+          <a class="order-id-link" onclick="inspectRecord('${ord.order_id}')">${ord.order_id}</a>
+          <span class="customer-name">${ord.customer_name || ord.order_id}</span>
+          <div style="margin-top: 4px;">${tierBadge}</div>
         </div>
-        <div class="ledger-cell">
-          <span class="ledger-customer">${ord.customer_name || ord.order_id}</span>
-          <span class="ledger-tier">${ord.customer_tier} Tier</span>
+        <div class="cell-urgency">
+          <span class="urgency-num ${scoreColorClass}">${ord.urgency_score.toFixed(1)}</span>
+          <span class="urgency-label">Urgency score</span>
         </div>
-        <div class="ledger-cell">
-          <span class="ledger-score ${scoreClass}">${ord.urgency_score}</span>
-          <span class="score-caption">Urgency score</span>
-        </div>
-        <div class="ledger-detail">
-          <div class="shortfall-summary-text">${formatShortfallSummary(ord.shortfall_summary)}</div>
+        <div></div>
+        <div class="cell-detail">
+          <div class="shortfall-text">${formatShortfallSummary(ord.shortfall_summary)}</div>
           ${optionsHtml}
-          <div class="ledger-row-actions">
-            <span class="reason-text">${ord.recommendation_reason}</span>
-            <button class="btn btn-action-approve" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'APPROVED')">${approveActionText}</button>
-            <button class="btn btn-action-reject" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'REJECTED')">Reject option</button>
+          <div class="row-actions-bar">
+            <span class="recommendation-reason">Reason: ${ord.recommendation_reason}</span>
+            <div class="action-buttons-group">
+              <button class="btn btn-approve" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'APPROVED')">${approveActionText}</button>
+              <button class="btn btn-reject" onclick="handleDecision('${ord.order_id}', '${ord.recommended_option}', 'REJECTED')">Reject option</button>
+            </div>
           </div>
         </div>
       `;
@@ -327,6 +333,13 @@ document.addEventListener("DOMContentLoaded", () => {
     return actionKey;
   }
 
+  function formatOptionCost(opt) {
+    if (opt.cost_estimate !== undefined) {
+      return `$${opt.cost_estimate.toFixed(2)}`;
+    }
+    return "";
+  }
+
   function getActionText(actionKey) {
     if (actionKey === "expedite") return "Approve expedite air freight";
     if (actionKey === "part_ship") return "Approve partial shipment";
@@ -337,8 +350,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function formatShortfallSummary(summaryText) {
     if (!summaryText) return "";
-    // Wrap record IDs like ORD-5001, SHP-2002, SKU-1002 in monospace record tags
-    return summaryText.replace(/\b(ORD-\d+|SHP-\d+|SKU-\d+|SUP-\d+|CUST-\d+)\b/g, '<span class="record-tag" onclick="inspectRecord(\'$1\')">$1</span>');
+    return summaryText.replace(/\b(ORD-\d+|SHP-\d+|SKU-\d+|SUP-\d+|CUST-\d+)\b/g, '<span class="record-citation" onclick="inspectRecord(\'$1\')">$1</span>');
   }
 
   window.inspectRecord = function(recordId) {
@@ -346,17 +358,17 @@ document.addEventListener("DOMContentLoaded", () => {
     if (recordId.startsWith("ORD-")) {
       const ord = dataIndex.orders.find(o => o.order_id === recordId);
       if (ord) {
-        alert(`Order ${recordId}:\nCustomer: ${ord.customer_name} (${ord.customer_tier})\nSKU: ${ord.sku} (${ord.sku_name})\nQuantity: ${ord.qty}\nValue: $${ord.order_value}\nPromised date: ${ord.promised_date}`);
+        alert(`Order Details [${recordId}]:\nCustomer: ${ord.customer_name} (${ord.customer_tier} Tier)\nSKU: ${ord.sku} (${ord.sku_name})\nQuantity: ${ord.qty}\nValue: $${ord.order_value}\nPromised date: ${ord.promised_date}`);
       }
     } else if (recordId.startsWith("SKU-")) {
       const st = dataIndex.stock.find(s => s.sku === recordId);
       if (st) {
-        alert(`Stock item ${recordId}:\nName: ${st.name}\nOn hand: ${st.on_hand}\nReserved: ${st.reserved}\nSafety stock: ${st.safety_stock}\nUnit cost: $${st.unit_cost}`);
+        alert(`Stock Item Details [${recordId}]:\nName: ${st.name}\nOn hand: ${st.on_hand}\nReserved: ${st.reserved}\nSafety stock: ${st.safety_stock}\nUnit cost: $${st.unit_cost}`);
       }
     } else if (recordId.startsWith("SHP-")) {
       const shp = dataIndex.shipments.find(s => s.shipment_id === recordId);
       if (shp) {
-        alert(`Shipment ${recordId}:\nSupplier: ${shp.supplier_id}\nSKU: ${shp.sku}\nQuantity: ${shp.qty}\nCarrier: ${shp.carrier}\nETA: ${shp.eta}`);
+        alert(`Shipment Details [${recordId}]:\nSupplier: ${shp.supplier_id}\nSKU: ${shp.sku}\nQuantity: ${shp.qty}\nCarrier: ${shp.carrier}\nETA: ${shp.eta}`);
       }
     }
   };
@@ -370,19 +382,19 @@ document.addEventListener("DOMContentLoaded", () => {
         body: JSON.stringify({
           order_id: orderId,
           action: action,
-          operator_notes: `${decision} by operator.`
+          operator_notes: `${decision} by operator via console manifest row.`
         })
       });
       await res.json();
 
-      const row = document.querySelector(`.ledger-row[data-order-id="${orderId}"]`);
+      const row = document.querySelector(`.manifest-row[data-order-id="${orderId}"]`);
       if (row) {
-        row.style.opacity = "0.5";
+        row.style.opacity = "0.55";
       }
 
       fetchAuditHistory();
     } catch (e) {
-      alert("Error recording action: " + e.message);
+      alert("Error recording decision: " + e.message);
     }
   };
 
@@ -394,7 +406,7 @@ document.addEventListener("DOMContentLoaded", () => {
       auditCount.textContent = actionHistory.length;
 
       if (actionHistory.length === 0) {
-        auditTableBody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">No decisions recorded in current session.</td></tr>';
+        auditTableBody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">No decisions logged in this session.</td></tr>';
         return;
       }
 
@@ -402,9 +414,9 @@ document.addEventListener("DOMContentLoaded", () => {
       actionHistory.forEach(a => {
         html += `
           <tr>
-            <td class="mono-val">${a.id}</td>
-            <td class="mono-val">${a.timestamp}</td>
-            <td class="mono-val">${a.order_id}</td>
+            <td class="mono-num">${a.id}</td>
+            <td class="mono-num">${a.timestamp}</td>
+            <td class="mono-num">${a.order_id}</td>
             <td>${a.chosen_action}</td>
             <td>${a.status}</td>
             <td>${a.operator_notes}</td>

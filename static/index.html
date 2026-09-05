@@ -10,128 +10,140 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <div class="console-container">
+  <div class="app-shell">
     <!-- Slim Header Bar -->
-    <header class="console-header">
+    <header class="app-header">
       <div class="header-brand">
-        <span class="brand-title">Supply Chain Disruption Console</span>
-        <span class="brand-track">TRACK_ID=PS08</span>
+        <svg class="header-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <h1 class="header-title">Supply Chain Disruption Assistant</h1>
+        <span class="header-track">TRACK_ID=PS08</span>
       </div>
-      
-      <div class="header-actions">
-        <div class="status-indicator" id="system-status-pill">
+
+      <div class="header-controls">
+        <div class="status-pill" id="system-status-pill">
           <span class="status-dot"></span>
-          <span id="status-text" class="status-label">Checking system status...</span>
+          <span id="status-text">Checking API status...</span>
         </div>
-        <button class="btn btn-console" id="btn-open-audit">Audit log (<span id="audit-count" class="mono-val">0</span>)</button>
-        <button class="btn btn-console" id="btn-open-index">Data index</button>
+        <button class="btn btn-secondary" id="btn-open-audit">
+          <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          Audit log (<span id="audit-count" class="mono-num">0</span>)
+        </button>
+        <button class="btn btn-secondary" id="btn-open-index">
+          <svg class="btn-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+          Data index
+        </button>
       </div>
     </header>
 
     <!-- Slim Pipeline Stage Trace Strip -->
-    <nav class="pipeline-trace-strip" id="pipeline-trace-strip" aria-label="Pipeline stage progress">
+    <div class="pipeline-trace-strip" aria-label="Pipeline execution progress">
       <div class="trace-step" id="trace-step-1">
         <span class="trace-dot"></span>
-        <span class="trace-label">Retrieval</span>
+        <span class="trace-name">Retrieval</span>
       </div>
-      <span class="trace-divider">&rarr;</span>
+      <span class="trace-arrow">&rarr;</span>
       <div class="trace-step" id="trace-step-2">
         <span class="trace-dot"></span>
-        <span class="trace-label">Resolve</span>
+        <span class="trace-name">Resolve</span>
       </div>
-      <span class="trace-divider">&rarr;</span>
+      <span class="trace-arrow">&rarr;</span>
       <div class="trace-step" id="trace-step-3">
         <span class="trace-dot"></span>
-        <span class="trace-label">Graph</span>
+        <span class="trace-name">Graph</span>
       </div>
-      <span class="trace-divider">&rarr;</span>
+      <span class="trace-arrow">&rarr;</span>
       <div class="trace-step" id="trace-step-4">
         <span class="trace-dot"></span>
-        <span class="trace-label">Rank</span>
+        <span class="trace-name">Rank</span>
       </div>
-      <span class="trace-divider">&rarr;</span>
+      <span class="trace-arrow">&rarr;</span>
       <div class="trace-step" id="trace-step-5">
         <span class="trace-dot"></span>
-        <span class="trace-label">Narrate</span>
+        <span class="trace-name">Narrate</span>
       </div>
-    </nav>
+    </div>
 
-    <!-- Main Workspace Layout -->
-    <main class="console-body">
-      <!-- Sidebar Control Panel -->
-      <aside class="control-sidebar">
-        <div class="sidebar-section">
-          <label for="sample-notice-select" class="field-label">Disruption scenario selector</label>
+    <!-- Precision Grid Main Layout -->
+    <main class="grid-layout">
+      <!-- Left Panel: Input & Scenario Selector -->
+      <aside class="panel-input">
+        <div class="form-group">
+          <label for="sample-notice-select" class="form-label">Sample disruption scenario</label>
           <select id="sample-notice-select" class="form-select">
-            <option value="">Choose a sample disruption notice...</option>
+            <option value="">Select a pre-loaded scenario...</option>
           </select>
         </div>
 
-        <div class="sidebar-section">
-          <label for="notice-textarea" class="field-label">Disruption notice text</label>
-          <textarea id="notice-textarea" class="form-textarea" placeholder="Paste unstructured disruption notice email or advisory text..."></textarea>
+        <div class="form-group">
+          <label for="notice-textarea" class="form-label">Disruption notice text</label>
+          <textarea id="notice-textarea" class="form-textarea" placeholder="Paste unstructured disruption advisory or email text here..."></textarea>
         </div>
 
-        <div class="sidebar-section">
-          <button class="btn btn-primary" id="btn-analyze">
-            <span class="btn-spinner" id="analyze-spinner" style="display:none;"></span>
+        <div class="form-group">
+          <button class="btn btn-primary btn-block" id="btn-analyze">
+            <span class="spinner" id="analyze-spinner" style="display:none;"></span>
             <span id="btn-analyze-text">Run impact pipeline</span>
           </button>
         </div>
 
-        <div class="notice-meta-box" id="notice-meta-card" style="display:none;">
-          <div class="meta-line">
-            <span class="meta-key">Scenario category:</span>
-            <span class="meta-value" id="meta-category">-</span>
+        <div class="scenario-info-box" id="notice-meta-card" style="display:none;">
+          <div class="info-row">
+            <span class="info-label">Category:</span>
+            <span class="info-value" id="meta-category">-</span>
           </div>
-          <div class="meta-desc" id="meta-desc"></div>
+          <div class="info-desc" id="meta-desc"></div>
         </div>
       </aside>
 
-      <!-- Main Results Manifest -->
-      <section class="manifest-content">
-        <!-- Initial Console State -->
-        <div class="console-placeholder" id="empty-state">
-          <div class="placeholder-text">
-            <h3>Disruption console ready</h3>
-            <p>Select a scenario or paste advisory text on the left, then run the impact pipeline to trace inventory shortfalls and rank mitigation options.</p>
+      <!-- Right Panel: Results & Manifest -->
+      <section class="panel-results">
+        <!-- Initial Empty State -->
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon-wrap">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           </div>
+          <h2>Ready for disruption analysis</h2>
+          <p>Select a scenario or paste text on the left, then run the pipeline to evaluate supply chain impacts and mitigation options.</p>
         </div>
 
-        <!-- Rounded Callout Card ONLY for Resolved Good / No Impact / No Match -->
-        <div class="resolved-callout-card" id="no-impact-alert" style="display:none;">
-          <div class="callout-header">
-            <span class="callout-badge" id="callout-badge-text">Resolved clear</span>
-            <h3 id="alert-title">No impact detected</h3>
+        <!-- Full-Width Banner ONLY for No Impact / No Match -->
+        <div class="outcome-banner" id="no-impact-alert" style="display:none;">
+          <div class="banner-icon-wrap">
+            <svg id="banner-svg-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
           </div>
-          <p id="alert-body" class="callout-body"></p>
-          <div class="callout-meta" id="alert-tags"></div>
-        </div>
-
-        <!-- Execution Details Block -->
-        <div class="execution-details-block" id="pipeline-details-container" style="display:none;">
-          <div class="headline-summary-bar" id="headline-text">Headline Summary</div>
-
-          <!-- Traceability Summary Ledger -->
-          <div class="trace-summary-grid">
-            <div class="summary-cell">
-              <span class="cell-label">Entity resolution</span>
-              <div class="cell-value" id="stage1-summary">-</div>
+          <div class="banner-body">
+            <div class="banner-header">
+              <h2 id="alert-title">No impact detected</h2>
+              <span class="badge" id="callout-badge-text">Resolved clear</span>
             </div>
-            <div class="summary-cell">
-              <span class="cell-label">Graph traversal</span>
-              <div class="cell-value" id="stage2-summary">-</div>
+            <p id="alert-body" class="banner-desc"></p>
+            <div class="banner-meta" id="alert-tags"></div>
+          </div>
+        </div>
+
+        <!-- Execution Details Container -->
+        <div class="execution-block" id="pipeline-details-container" style="display:none;">
+          <div class="headline-bar" id="headline-text">Headline Summary</div>
+
+          <div class="stage-summary-grid">
+            <div class="summary-card">
+              <div class="card-label">Stage 1: Entity Resolution</div>
+              <div class="card-value" id="stage1-summary">-</div>
+            </div>
+            <div class="summary-card">
+              <div class="card-label">Stage 2: Graph Traversal</div>
+              <div class="card-value" id="stage2-summary">-</div>
             </div>
           </div>
         </div>
 
-        <!-- Affected Orders Dense Manifest List -->
-        <div class="manifest-section" id="action-cards-section" style="display:none;">
-          <div class="manifest-header">
-            <h3>Affected order ledger</h3>
+        <!-- Affected Orders Clean Row Manifest -->
+        <div class="manifest-container" id="action-cards-section" style="display:none;">
+          <div class="manifest-top">
+            <h2>Affected order manifest</h2>
             <span class="manifest-sub">Ranked by calculated urgency score. Recommend, never act.</span>
           </div>
-          <div class="ledger-list" id="action-cards-list"></div>
+          <div class="manifest-rows" id="action-cards-list"></div>
         </div>
       </section>
     </main>
@@ -139,25 +151,25 @@
 
   <!-- Audit Log Modal -->
   <div class="modal-backdrop" id="audit-modal" style="display:none;">
-    <div class="modal-pane">
+    <div class="modal-window">
       <div class="modal-header">
-        <h3>Operator decision log</h3>
-        <button class="btn-icon-close" id="btn-close-audit" aria-label="Close audit log">&times;</button>
+        <h2>Operator decision log</h2>
+        <button class="btn-close" id="btn-close-audit" aria-label="Close modal">&times;</button>
       </div>
-      <div class="modal-content">
-        <table class="ledger-table">
+      <div class="modal-body">
+        <table class="data-table">
           <thead>
             <tr>
-              <th>Action ID</th>
-              <th>Timestamp</th>
+              <th>ID</th>
+              <th>Time</th>
               <th>Order ID</th>
-              <th>Action type</th>
+              <th>Action</th>
               <th>Decision</th>
               <th>Operator notes</th>
             </tr>
           </thead>
           <tbody id="audit-table-body">
-            <tr><td colspan="6" class="text-muted text-center">No decisions recorded in current session.</td></tr>
+            <tr><td colspan="6" class="text-muted text-center">No decisions logged in this session.</td></tr>
           </tbody>
         </table>
       </div>
@@ -166,19 +178,19 @@
 
   <!-- Data Index Modal -->
   <div class="modal-backdrop" id="index-modal" style="display:none;">
-    <div class="modal-pane wide-pane">
+    <div class="modal-window wide">
       <div class="modal-header">
-        <h3>System data index inspector</h3>
-        <button class="btn-icon-close" id="btn-close-index" aria-label="Close data index">&times;</button>
+        <h2>System data index inspector</h2>
+        <button class="btn-close" id="btn-close-index" aria-label="Close modal">&times;</button>
       </div>
-      <div class="modal-content">
+      <div class="modal-body">
         <div class="tab-strip">
-          <button class="tab-item active" data-tab="tab-suppliers">Suppliers</button>
-          <button class="tab-item" data-tab="tab-shipments">Shipments</button>
-          <button class="tab-item" data-tab="tab-stock">Stock inventory</button>
-          <button class="tab-item" data-tab="tab-orders">Customer orders</button>
+          <button class="tab-btn active" data-tab="tab-suppliers">Suppliers</button>
+          <button class="tab-btn" data-tab="tab-shipments">Shipments</button>
+          <button class="tab-btn" data-tab="tab-stock">Stock inventory</button>
+          <button class="tab-btn" data-tab="tab-orders">Customer orders</button>
         </div>
-        <pre id="data-index-json" class="raw-data-block">Loading data index...</pre>
+        <pre id="data-index-json" class="json-code">Loading index data...</pre>
       </div>
     </div>
   </div>
