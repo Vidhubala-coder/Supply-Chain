@@ -14,6 +14,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from llm.resolve import resolve_entities
+from engine.contradiction_service import detect_contradictions
 from engine.impact_graph import traverse_impact
 from engine.ranking import rank_affected_orders
 from engine.options import process_impact_options
@@ -142,7 +143,7 @@ def analyze_disruption(req: AnalyzeRequest):
         }
 
     # -------------------------------------------------------------
-    # Stage 2: Deterministic Impact Graph Traversal (Zero LLM calls)
+    # Contradiction Check (Zero LLM calls)
     # -------------------------------------------------------------
     suppliers = load_data_file("suppliers.json")
     stock = load_data_file("stock.json")
@@ -151,6 +152,36 @@ def analyze_disruption(req: AnalyzeRequest):
     customers = load_data_file("customers.json")
 
     candidate_matches = stage1.get("candidate_matches", [])
+    contradiction_res = detect_contradictions(
+        notice_text=notice_text,
+        extracted_signals=stage1.get("extracted_signals", {}),
+        candidate_matches=candidate_matches,
+        suppliers=suppliers,
+        stock=stock,
+        shipments=shipments
+    )
+
+    # CRITICAL contradiction blocks pipeline
+    if contradiction_res.get("severity") == "CRITICAL":
+        return {
+            "notice_text": notice_text,
+            "stage1": stage1,
+            "contradiction": contradiction_res,
+            "stage2": None,
+            "stage3": None,
+            "stage4": {
+                "headline": "CRITICAL CONTRADICTION DETECTED",
+                "affected_orders": [],
+                "no_impact": False,
+                "reason": contradiction_res["summary"]
+            },
+            "match_found": True,
+            "short_circuited": True
+        }
+
+    # -------------------------------------------------------------
+    # Stage 2: Deterministic Impact Graph Traversal (Zero LLM calls)
+    # -------------------------------------------------------------
     raw_impact = traverse_impact(
         candidate_matches=candidate_matches,
         suppliers=suppliers,
@@ -175,6 +206,7 @@ def analyze_disruption(req: AnalyzeRequest):
     return {
         "notice_text": notice_text,
         "stage1": stage1,
+        "contradiction": contradiction_res,
         "stage2": {
             "matched_entity_ids": raw_impact.get("matched_entity_ids"),
             "affected_shipments": raw_impact.get("affected_shipments"),
