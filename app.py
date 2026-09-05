@@ -85,6 +85,19 @@ def get_data_index():
         "customers": load_data_file("customers.json")
     }
 
+def log_timeline_event(stage: str, details: str, notice_id: Optional[str] = None, order_id: Optional[str] = None, status: str = "INFO"):
+    entry = {
+        "id": f"TL-{len(audit_log)+1:04d}",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "stage": stage,
+        "details": details,
+        "notice_id": notice_id,
+        "order_id": order_id,
+        "status": status
+    }
+    audit_log.append(entry)
+    return entry
+
 @app.post("/api/analyze")
 def analyze_disruption(req: AnalyzeRequest):
     notice_text = req.notice_text
@@ -99,14 +112,21 @@ def analyze_disruption(req: AnalyzeRequest):
     if not notice_text or not notice_text.strip():
         raise HTTPException(status_code=400, detail="Notice text or valid notice_id is required.")
 
+    # Timeline event 1: Notice Received
+    log_timeline_event("Notice Received", f"Ingested disruption notice text ({len(notice_text)} chars).", notice_id=req.notice_id)
+
     # -------------------------------------------------------------
     # Stage 1: LLM Entity Resolution & Vector Retrieval
     # -------------------------------------------------------------
     stage1 = resolve_entities(notice_text.strip(), similarity_threshold=0.25)
     match_state = stage1.get("match_state", "EXACT" if stage1.get("match_found") else "UNMAPPED")
 
+    # Timeline event 2: Entities Matched / Unmapped / Ambiguous
+    log_timeline_event("Entities Matched", f"Stage 1 entity resolution state: {match_state}.", notice_id=req.notice_id)
+
     # EXPLICIT SHORT-CIRCUIT BRANCH: If UNMAPPED in Stage 1
     if match_state == "UNMAPPED":
+        log_timeline_event("Awaiting Resolution", "Short-circuited due to UNMAPPED entity state.", notice_id=req.notice_id, status="UNMAPPED")
         return {
             "notice_text": notice_text,
             "stage1": stage1,
@@ -120,11 +140,13 @@ def analyze_disruption(req: AnalyzeRequest):
             },
             "match_found": False,
             "match_state": "UNMAPPED",
-            "short_circuited": True
+            "short_circuited": True,
+            "timeline": [e for e in audit_log if e.get("notice_id") == req.notice_id or e.get("stage")]
         }
 
     # EXPLICIT SHORT-CIRCUIT BRANCH: If AMBIGUOUS in Stage 1 (Requires human clarification)
     if match_state == "AMBIGUOUS":
+        log_timeline_event("Awaiting Clarification", "Short-circuited pending human entity clarification.", notice_id=req.notice_id, status="AMBIGUOUS")
         return {
             "notice_text": notice_text,
             "stage1": stage1,
@@ -139,7 +161,8 @@ def analyze_disruption(req: AnalyzeRequest):
             "candidate_matches": stage1.get("candidate_matches", []),
             "match_found": False,
             "match_state": "AMBIGUOUS",
-            "short_circuited": True
+            "short_circuited": True,
+            "timeline": [e for e in audit_log if e.get("notice_id") == req.notice_id or e.get("stage")]
         }
 
     # -------------------------------------------------------------
@@ -163,6 +186,7 @@ def analyze_disruption(req: AnalyzeRequest):
 
     # CRITICAL contradiction blocks pipeline
     if contradiction_res.get("severity") == "CRITICAL":
+        log_timeline_event("Contradiction Blocked", contradiction_res["summary"], notice_id=req.notice_id, status="CRITICAL_CONTRADICTION")
         return {
             "notice_text": notice_text,
             "stage1": stage1,
@@ -176,7 +200,8 @@ def analyze_disruption(req: AnalyzeRequest):
                 "reason": contradiction_res["summary"]
             },
             "match_found": True,
-            "short_circuited": True
+            "short_circuited": True,
+            "timeline": [e for e in audit_log if e.get("notice_id") == req.notice_id or e.get("stage")]
         }
 
     # -------------------------------------------------------------
@@ -190,6 +215,7 @@ def analyze_disruption(req: AnalyzeRequest):
         orders=orders,
         customers=customers
     )
+    log_timeline_event("Impact Calculated", f"Identified {raw_impact.get('total_orders_affected', 0)} affected pending order(s).", notice_id=req.notice_id)
 
     # -------------------------------------------------------------
     # Stage 3: Deterministic Urgency Ranking & Option/Cost Math
@@ -197,11 +223,14 @@ def analyze_disruption(req: AnalyzeRequest):
     ranked_orders = rank_affected_orders(raw_impact.get("affected_orders", []))
     raw_impact["affected_orders"] = ranked_orders
     stage3_impact = process_impact_options(raw_impact, stock)
+    log_timeline_event("Options Evaluated", "Generated 4 mitigation options with deterministic costs and recommendation scores.", notice_id=req.notice_id)
 
     # -------------------------------------------------------------
     # Stage 4: Grounded LLM Plan Narration
     # -------------------------------------------------------------
     stage4 = narrate_plan(stage3_impact)
+    log_timeline_event("Recommendation Made", f"Final plan generated: {stage4.get('headline', '')}", notice_id=req.notice_id)
+    log_timeline_event("Awaiting Approval", "Action plan prepared for human operator review.", notice_id=req.notice_id, status="AWAITING_APPROVAL")
 
     return {
         "notice_text": notice_text,
@@ -217,7 +246,8 @@ def analyze_disruption(req: AnalyzeRequest):
         "stage3": stage3_impact,
         "stage4": stage4,
         "match_found": True,
-        "short_circuited": False
+        "short_circuited": False,
+        "timeline": [e for e in audit_log if e.get("notice_id") == req.notice_id or e.get("stage")]
     }
 
 class ClarifyRequest(BaseModel):
