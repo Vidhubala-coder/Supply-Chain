@@ -3,6 +3,7 @@ import json
 import numpy as np
 import math
 import re
+import zlib
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "..", "data")
 
@@ -88,19 +89,19 @@ def build_entity_corpus():
 def deterministic_feature_vector(text, dim=768):
     """
     Fallback deterministic feature vector generator (768 dimensions, L2 normalized).
-    Uses hashed n-gram subword features for robust offline similarity matching.
+    Uses stable zlib.crc32 hashing for process-independent feature alignment.
     """
     tokens = re.findall(r'\w+', text.lower())
     vec = np.zeros(dim, dtype=np.float32)
     
     for token in tokens:
         # Unigram feature
-        h1 = hash(token) % dim
-        vec[h1] += 1.0
+        h1 = zlib.crc32(token.encode('utf-8')) % dim
+        vec[h1] += 2.0
         # Character trigrams for typo resilience
         for i in range(len(token) - 2):
             trigram = token[i:i+3]
-            h2 = hash(trigram) % dim
+            h2 = zlib.crc32(trigram.encode('utf-8')) % dim
             vec[h2] += 0.5
 
     norm = np.linalg.norm(vec)
