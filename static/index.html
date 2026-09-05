@@ -238,6 +238,12 @@
                 <div id="policy-citations-list" class="policy-list"></div>
               </div>
 
+              <!-- Relational Impact Chain Visual -->
+              <div class="impact-chain-block" id="impact-chain-wrap" style="display:none;">
+                <div class="block-heading">Relational Impact Chain Visual</div>
+                <div id="impact-chain-flow" class="impact-chain-flow"></div>
+              </div>
+
               <!-- Decision Timeline Container -->
               <div class="timeline-block" id="decision-timeline-wrap" style="display:none;">
                 <div class="block-heading">Decision Timeline Audit Trail</div>
@@ -314,6 +320,11 @@
         <button class="btn-close" id="btn-close-slideover" aria-label="Close slide-over">&times;</button>
       </div>
       <div class="slideover-body">
+        <!-- Shipment Step Timeline (Rendered for Shipment records) -->
+        <div class="shipment-timeline-wrap" id="shipment-timeline-wrap" style="display:none; margin-bottom: 20px;">
+          <span class="field-key" style="margin-bottom: 8px; display:block;">Shipment Lifecycle Timeline</span>
+          <div class="shipment-step-timeline" id="shipment-step-timeline"></div>
+        </div>
         <div class="record-fields-grid" id="slideover-fields"></div>
         <div class="raw-json-wrap">
           <span class="field-key">Raw record JSON</span>

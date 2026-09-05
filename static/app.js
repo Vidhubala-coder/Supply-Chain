@@ -367,6 +367,7 @@ document.addEventListener("DOMContentLoaded", () => {
       stage2Summary.textContent = `${stage2.total_orders_affected || 0} order(s) affected. Total risk: $${(stage2.total_at_risk_value || 0).toLocaleString()}.`;
 
       renderPolicyCitations(stage4.policy_citations || []);
+      renderImpactChainDiagram(data);
       renderDecisionTimeline(data.timeline || []);
       renderManifestRows(affectedOrders);
     }
@@ -613,6 +614,70 @@ document.addEventListener("DOMContentLoaded", () => {
     evidenceBackdrop.style.display = "flex";
   };
 
+  function renderImpactChainDiagram(data) {
+    const wrap = document.getElementById("impact-chain-wrap");
+    const flow = document.getElementById("impact-chain-flow");
+    if (!data || !data.stage2) {
+      wrap.style.display = "none";
+      return;
+    }
+    wrap.style.display = "block";
+
+    const stage1 = data.stage1 || {};
+    const stage2 = data.stage2 || {};
+    const stage3 = data.stage3 || {};
+    const affectedOrders = stage3.affected_orders || [];
+
+    const firstMatch = (stage1.candidate_matches || [])[0] || {};
+    const supplierId = (stage2.matched_entity_ids || []).find(id => String(id).startsWith("SUP-")) || firstMatch.entity_id || "SUP-101";
+    const shipmentId = (stage2.affected_shipments || [])[0] || "SHP-2002";
+    const skuId = (stage2.affected_skus || [])[0] || "SKU-1002";
+
+    let supName = supplierId;
+    if (dataIndex && dataIndex.suppliers) {
+      const supObj = dataIndex.suppliers.find(s => s.id === supplierId);
+      if (supObj) supName = `${supObj.name}`;
+    }
+
+    let skuName = skuId;
+    let invText = "Stock available";
+    if (dataIndex && dataIndex.stock) {
+      const stObj = dataIndex.stock.find(s => s.sku === skuId);
+      if (stObj) {
+        skuName = `${stObj.name}`;
+        invText = `${stObj.on_hand} on hand`;
+      }
+    }
+
+    const uniqueCustomers = new Set(affectedOrders.map(o => o.customer_id)).size;
+
+    const nodes = [
+      { type: "Supplier", val: supName, recId: supplierId },
+      { type: "Shipment", val: shipmentId, recId: shipmentId },
+      { type: "Product", val: skuName, recId: skuId },
+      { type: "Warehouse", val: "Main Hub", recId: null },
+      { type: "Inventory", val: invText, recId: skuId },
+      { type: "Orders", val: `${stage2.total_orders_affected || affectedOrders.length} affected`, recId: affectedOrders[0] ? affectedOrders[0].order_id : null },
+      { type: "Customers", val: `${uniqueCustomers} affected`, recId: affectedOrders[0] ? affectedOrders[0].customer_id : null }
+    ];
+
+    let html = "";
+    nodes.forEach((n, idx) => {
+      const clickAttr = n.recId ? `onclick="openRecordSlideover('${n.recId}')"` : '';
+      html += `
+        <div class="chain-node" ${clickAttr} title="${n.recId ? 'Click to inspect ' + n.recId : n.val}">
+          <div class="chain-node-type">${n.type}</div>
+          <div class="chain-node-val">${n.val}</div>
+        </div>
+      `;
+      if (idx < nodes.length - 1) {
+        html += `<span class="chain-connector">&rarr;</span>`;
+      }
+    });
+
+    flow.innerHTML = html;
+  }
+
   // Slide-Over Panel for Clickable Record-ID Grounding Proof
   window.openRecordSlideover = function(recordId) {
     if (!dataIndex) return;
@@ -639,6 +704,52 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!recData) return;
 
     slideoverTitle.textContent = `${recType}: ${recordId}`;
+
+    // Render Shipment Timeline if Shipment Record
+    const timelineWrap = document.getElementById("shipment-timeline-wrap");
+    const timelineFlow = document.getElementById("shipment-step-timeline");
+
+    if (recordId.startsWith("SHP-") && recData) {
+      timelineWrap.style.display = "block";
+      const status = String(recData.status || "in_transit").toLowerCase();
+
+      const steps = [
+        { name: "Created", key: "created" },
+        { name: "Dispatched", key: "dispatched" },
+        { name: "In Transit", key: "in_transit" },
+        { name: "Delayed / Audit", key: "delayed" },
+        { name: "Delivered", key: "delivered" }
+      ];
+
+      const isDelayed = status.includes("delay") || status.includes("halt");
+      const isDelivered = status === "delivered" || status === "completed";
+
+      let html = "";
+      steps.forEach(s => {
+        let stepClass = "shipment-step";
+        if (s.key === "created" || s.key === "dispatched") {
+          stepClass += " completed";
+        } else if (s.key === "in_transit") {
+          stepClass += (isDelivered || isDelayed) ? " completed" : " active";
+        } else if (s.key === "delayed") {
+          if (isDelayed) stepClass += " delayed active";
+          else if (isDelivered) stepClass += " completed";
+        } else if (s.key === "delivered") {
+          if (isDelivered) stepClass += " completed active";
+        }
+
+        html += `
+          <div class="${stepClass}">
+            <div class="shipment-step-dot"></div>
+            <div class="shipment-step-name">${s.name}</div>
+          </div>
+        `;
+      });
+      timelineFlow.innerHTML = html;
+    } else {
+      timelineWrap.style.display = "none";
+    }
+
     let fieldsHtml = "";
     Object.keys(recData).forEach(k => {
       const val = recData[k];
