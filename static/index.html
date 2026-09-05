@@ -3,197 +3,182 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Supply Chain Disruption Response Assistant (PS08)</title>
+  <title>Supply Chain Disruption Response Console (PS08)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <div class="app-container">
-    <!-- Top Navigation Header -->
-    <header class="app-header">
-      <div class="brand">
-        <div class="logo-icon">⚡</div>
-        <div class="brand-text">
-          <h1>Nexus Disruption Assistant</h1>
-          <span class="sub-badge">TRACK_ID=PS08 &bull; Grounded GenAI &amp; Deterministic Engine</span>
-        </div>
+  <div class="console-container">
+    <!-- Slim Header Bar -->
+    <header class="console-header">
+      <div class="header-brand">
+        <span class="brand-title">Supply Chain Disruption Console</span>
+        <span class="brand-track">TRACK_ID=PS08</span>
       </div>
-      <div class="header-controls">
-        <div class="status-pill" id="system-status-pill">
-          <span class="dot"></span>
-          <span id="status-text">Checking System...</span>
+      
+      <div class="header-actions">
+        <div class="status-indicator" id="system-status-pill">
+          <span class="status-dot"></span>
+          <span id="status-text" class="status-label">Checking system status...</span>
         </div>
-        <button class="btn btn-secondary" id="btn-open-audit">📋 Audit Log (<span id="audit-count">0</span>)</button>
-        <button class="btn btn-secondary" id="btn-open-index">🔍 Data Index</button>
+        <button class="btn btn-console" id="btn-open-audit">Audit log (<span id="audit-count" class="mono-val">0</span>)</button>
+        <button class="btn btn-console" id="btn-open-index">Data index</button>
       </div>
     </header>
 
-    <!-- Main Workspace Layout -->
-    <main class="workspace">
-      <!-- Left Panel: Notice Input & Preset Picker -->
-      <section class="panel control-panel">
-        <div class="panel-header">
-          <h2>Disruption Notice Input</h2>
-          <span class="panel-subtitle">Select a scenario or paste raw text notice</span>
-        </div>
+    <!-- Slim Pipeline Stage Trace Strip -->
+    <nav class="pipeline-trace-strip" id="pipeline-trace-strip" aria-label="Pipeline stage progress">
+      <div class="trace-step" id="trace-step-1">
+        <span class="trace-dot"></span>
+        <span class="trace-label">Retrieval</span>
+      </div>
+      <span class="trace-divider">&rarr;</span>
+      <div class="trace-step" id="trace-step-2">
+        <span class="trace-dot"></span>
+        <span class="trace-label">Resolve</span>
+      </div>
+      <span class="trace-divider">&rarr;</span>
+      <div class="trace-step" id="trace-step-3">
+        <span class="trace-dot"></span>
+        <span class="trace-label">Graph</span>
+      </div>
+      <span class="trace-divider">&rarr;</span>
+      <div class="trace-step" id="trace-step-4">
+        <span class="trace-dot"></span>
+        <span class="trace-label">Rank</span>
+      </div>
+      <span class="trace-divider">&rarr;</span>
+      <div class="trace-step" id="trace-step-5">
+        <span class="trace-dot"></span>
+        <span class="trace-label">Narrate</span>
+      </div>
+    </nav>
 
-        <div class="form-group">
-          <label for="sample-notice-select">Pre-loaded Disruption Scenarios (6-8 Fixtures)</label>
+    <!-- Main Workspace Layout -->
+    <main class="console-body">
+      <!-- Sidebar Control Panel -->
+      <aside class="control-sidebar">
+        <div class="sidebar-section">
+          <label for="sample-notice-select" class="field-label">Disruption scenario selector</label>
           <select id="sample-notice-select" class="form-select">
-            <option value="">-- Choose a Sample Disruption Notice --</option>
+            <option value="">Choose a sample disruption notice...</option>
           </select>
         </div>
 
-        <div class="form-group">
-          <label for="notice-textarea">Raw Disruption Notice Text</label>
-          <textarea id="notice-textarea" class="form-textarea" placeholder="Paste unstructured disruption notice email or report text here..."></textarea>
+        <div class="sidebar-section">
+          <label for="notice-textarea" class="field-label">Disruption notice text</label>
+          <textarea id="notice-textarea" class="form-textarea" placeholder="Paste unstructured disruption notice email or advisory text..."></textarea>
         </div>
 
-        <div class="form-actions">
-          <button class="btn btn-primary btn-block" id="btn-analyze">
-            <span class="spinner" id="analyze-spinner" style="display:none;"></span>
-            <span id="btn-analyze-text">🚀 Run 4-Stage Impact Pipeline</span>
+        <div class="sidebar-section">
+          <button class="btn btn-primary" id="btn-analyze">
+            <span class="btn-spinner" id="analyze-spinner" style="display:none;"></span>
+            <span id="btn-analyze-text">Run impact pipeline</span>
           </button>
         </div>
 
-        <div class="notice-meta-card" id="notice-meta-card" style="display:none;">
-          <div class="meta-row">
-            <span class="meta-label">Category:</span>
-            <span class="meta-val" id="meta-category">-</span>
+        <div class="notice-meta-box" id="notice-meta-card" style="display:none;">
+          <div class="meta-line">
+            <span class="meta-key">Scenario category:</span>
+            <span class="meta-value" id="meta-category">-</span>
           </div>
-          <p id="meta-desc" class="meta-desc"></p>
+          <div class="meta-desc" id="meta-desc"></div>
         </div>
-      </section>
+      </aside>
 
-      <!-- Right Panel: Pipeline Execution & Action Cards -->
-      <section class="panel results-panel">
-        <!-- Pipeline Flow Stepper Bar -->
-        <div class="pipeline-stepper" id="pipeline-stepper">
-          <div class="step-card" id="step-1-card">
-            <div class="step-num">Stage 1</div>
-            <div class="step-title">Entity Resolution</div>
-            <div class="step-sub">Vector &amp; LLM</div>
-          </div>
-          <div class="step-arrow">&rarr;</div>
-          <div class="step-card" id="step-2-card">
-            <div class="step-num">Stage 2</div>
-            <div class="step-title">Graph Traversal</div>
-            <div class="step-sub">Deterministic Python</div>
-          </div>
-          <div class="step-arrow">&rarr;</div>
-          <div class="step-card" id="step-3-card">
-            <div class="step-num">Stage 3</div>
-            <div class="step-title">Urgency &amp; Options</div>
-            <div class="step-sub">Trade-off Math</div>
-          </div>
-          <div class="step-arrow">&rarr;</div>
-          <div class="step-card" id="step-4-card">
-            <div class="step-num">Stage 4</div>
-            <div class="step-title">Plan Narration</div>
-            <div class="step-sub">Grounded LLM</div>
+      <!-- Main Results Manifest -->
+      <section class="manifest-content">
+        <!-- Initial Console State -->
+        <div class="console-placeholder" id="empty-state">
+          <div class="placeholder-text">
+            <h3>Disruption console ready</h3>
+            <p>Select a scenario or paste advisory text on the left, then run the impact pipeline to trace inventory shortfalls and rank mitigation options.</p>
           </div>
         </div>
 
-        <!-- Initial Placeholder State -->
-        <div class="empty-state" id="empty-state">
-          <div class="empty-icon">🌐</div>
-          <h3>Select or paste a disruption notice to analyze impact</h3>
-          <p>The system will route the notice through local vector retrieval, Stage 1 entity resolution, Stage 2-3 deterministic graph math, and Stage 4 grounded narration.</p>
+        <!-- Rounded Callout Card ONLY for Resolved Good / No Impact / No Match -->
+        <div class="resolved-callout-card" id="no-impact-alert" style="display:none;">
+          <div class="callout-header">
+            <span class="callout-badge" id="callout-badge-text">Resolved clear</span>
+            <h3 id="alert-title">No impact detected</h3>
+          </div>
+          <p id="alert-body" class="callout-body"></p>
+          <div class="callout-meta" id="alert-tags"></div>
         </div>
 
-        <!-- Short-Circuit / No Impact Banner -->
-        <div class="alert-card" id="no-impact-alert" style="display:none;">
-          <div class="alert-icon" id="alert-icon">ℹ️</div>
-          <div class="alert-content">
-            <h3 id="alert-title">No Impact Detected</h3>
-            <p id="alert-body"></p>
-            <div class="alert-tags" id="alert-tags"></div>
-          </div>
-        </div>
+        <!-- Execution Details Block -->
+        <div class="execution-details-block" id="pipeline-details-container" style="display:none;">
+          <div class="headline-summary-bar" id="headline-text">Headline Summary</div>
 
-        <!-- Pipeline Stages Overview Accordion -->
-        <div class="pipeline-details-container" id="pipeline-details-container" style="display:none;">
-          <div class="headline-banner" id="headline-banner">
-            <div class="headline-title" id="headline-text">Headline Summary</div>
-          </div>
-
-          <!-- Stage 1 Details Card -->
-          <div class="detail-card">
-            <div class="detail-card-header">
-              <span class="stage-tag tag-llm">Stage 1 LLM + Retrieval</span>
-              <h4>Entity Resolution &amp; Candidate Matches</h4>
+          <!-- Traceability Summary Ledger -->
+          <div class="trace-summary-grid">
+            <div class="summary-cell">
+              <span class="cell-label">Entity resolution</span>
+              <div class="cell-value" id="stage1-summary">-</div>
             </div>
-            <div class="detail-card-body" id="stage1-body"></div>
-          </div>
-
-          <!-- Stage 2 Graph Traversal Card -->
-          <div class="detail-card">
-            <div class="detail-card-header">
-              <span class="stage-tag tag-det">Stage 2 Deterministic Graph</span>
-              <h4>Relational Impact Graph Traversal</h4>
+            <div class="summary-cell">
+              <span class="cell-label">Graph traversal</span>
+              <div class="cell-value" id="stage2-summary">-</div>
             </div>
-            <div class="detail-card-body" id="stage2-body"></div>
           </div>
         </div>
 
-        <!-- Ranked Action Plan Cards Section -->
-        <div class="action-cards-section" id="action-cards-section" style="display:none;">
-          <div class="section-header">
-            <h3>Ranked Mitigation Action Cards</h3>
-            <span class="sub-text">Recommend, never act — human approval required</span>
+        <!-- Affected Orders Dense Manifest List -->
+        <div class="manifest-section" id="action-cards-section" style="display:none;">
+          <div class="manifest-header">
+            <h3>Affected order ledger</h3>
+            <span class="manifest-sub">Ranked by calculated urgency score. Recommend, never act.</span>
           </div>
-          <div class="cards-list" id="action-cards-list"></div>
+          <div class="ledger-list" id="action-cards-list"></div>
         </div>
       </section>
     </main>
   </div>
 
-  <!-- Audit Log Modal / Drawer -->
-  <div class="modal-overlay" id="audit-modal" style="display:none;">
-    <div class="modal-content">
+  <!-- Audit Log Modal -->
+  <div class="modal-backdrop" id="audit-modal" style="display:none;">
+    <div class="modal-pane">
       <div class="modal-header">
-        <h3>Human-in-the-Loop Audit Log</h3>
-        <button class="btn-close" id="btn-close-audit">&times;</button>
+        <h3>Operator decision log</h3>
+        <button class="btn-icon-close" id="btn-close-audit" aria-label="Close audit log">&times;</button>
       </div>
-      <div class="modal-body">
-        <table class="audit-table">
+      <div class="modal-content">
+        <table class="ledger-table">
           <thead>
             <tr>
-              <th>ID</th>
-              <th>Time</th>
+              <th>Action ID</th>
+              <th>Timestamp</th>
               <th>Order ID</th>
-              <th>Action</th>
+              <th>Action type</th>
               <th>Decision</th>
-              <th>Operator Notes</th>
+              <th>Operator notes</th>
             </tr>
           </thead>
           <tbody id="audit-table-body">
-            <tr><td colspan="6" class="text-center">No decisions recorded yet.</td></tr>
+            <tr><td colspan="6" class="text-muted text-center">No decisions recorded in current session.</td></tr>
           </tbody>
         </table>
       </div>
     </div>
   </div>
 
-  <!-- Data Index Inspector Modal -->
-  <div class="modal-overlay" id="index-modal" style="display:none;">
-    <div class="modal-content large-modal">
+  <!-- Data Index Modal -->
+  <div class="modal-backdrop" id="index-modal" style="display:none;">
+    <div class="modal-pane wide-pane">
       <div class="modal-header">
-        <h3>System Data Index Inspector</h3>
-        <button class="btn-close" id="btn-close-index">&times;</button>
+        <h3>System data index inspector</h3>
+        <button class="btn-icon-close" id="btn-close-index" aria-label="Close data index">&times;</button>
       </div>
-      <div class="modal-body">
-        <div class="tab-buttons">
-          <button class="tab-btn active" data-tab="tab-suppliers">Suppliers</button>
-          <button class="tab-btn" data-tab="tab-shipments">Shipments</button>
-          <button class="tab-btn" data-tab="tab-stock">Stock Inventory</button>
-          <button class="tab-btn" data-tab="tab-orders">Customer Orders</button>
+      <div class="modal-content">
+        <div class="tab-strip">
+          <button class="tab-item active" data-tab="tab-suppliers">Suppliers</button>
+          <button class="tab-item" data-tab="tab-shipments">Shipments</button>
+          <button class="tab-item" data-tab="tab-stock">Stock inventory</button>
+          <button class="tab-item" data-tab="tab-orders">Customer orders</button>
         </div>
-        <div class="tab-content" id="tab-content">
-          <pre id="data-index-json" class="json-code-block">Loading data index...</pre>
-        </div>
+        <pre id="data-index-json" class="raw-data-block">Loading data index...</pre>
       </div>
     </div>
   </div>
