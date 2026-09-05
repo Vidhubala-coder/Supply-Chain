@@ -1,0 +1,102 @@
+[
+  {
+    "id": "SUP-101",
+    "name": "Apex Microelectronics",
+    "aliases": ["Apex Micro", "Apex Semiconductors", "Apex Taiwan"],
+    "skus": ["SKU-1001", "SKU-1002"],
+    "lead_time_days": 14,
+    "region": "Taiwan",
+    "contact": "orders@apexmicro.tw",
+    "default_carrier": "Aero Freight"
+  },
+  {
+    "id": "SUP-102",
+    "name": "Lumina Optics",
+    "aliases": ["Lumina Display", "Lumina Korea"],
+    "skus": ["SKU-1003", "SKU-1004"],
+    "lead_time_days": 21,
+    "region": "South Korea",
+    "contact": "sales@luminaoptics.kr",
+    "default_carrier": "TransOcean Logistics"
+  },
+  {
+    "id": "SUP-103",
+    "name": "Titan Battery Systems",
+    "aliases": ["Titan Energy", "Titan Battery Japan"],
+    "skus": ["SKU-1005"],
+    "lead_time_days": 18,
+    "region": "Japan",
+    "contact": "support@titanbattery.jp",
+    "default_carrier": "Pacific Express"
+  },
+  {
+    "id": "SUP-104",
+    "name": "Polymer Composites Corp",
+    "aliases": ["Polymer Composites", "Polymer USA"],
+    "skus": ["SKU-1006", "SKU-1007"],
+    "lead_time_days": 7,
+    "region": "USA",
+    "contact": "orders@polymercomposites.com",
+    "default_carrier": "US Freight Express"
+  },
+  {
+    "id": "SUP-105",
+    "name": "Nova Sensors Inc",
+    "aliases": ["Nova Sensors", "Nova MEMS Germany"],
+    "skus": ["SKU-1008"],
+    "lead_time_days": 10,
+    "region": "Germany",
+    "contact": "info@novasensors.de",
+    "default_carrier": "EuroAir Cargo"
+  },
+  {
+    "id": "SUP-106",
+    "name": "Precision Fasteners Ltd",
+    "aliases": ["Precision Fasteners", "Precision Vietnam"],
+    "skus": ["SKU-1009"],
+    "lead_time_days": 12,
+    "region": "Vietnam",
+    "contact": "sales@precisionfasteners.vn",
+    "default_carrier": "Asia Express Shipping"
+  },
+  {
+    "id": "SUP-107",
+    "name": "Quantum Memory Corp",
+    "aliases": ["Quantum Memory", "Quantum Storage"],
+    "skus": ["SKU-1010"],
+    "lead_time_days": 15,
+    "region": "Taiwan",
+    "contact": "supply@quantummemory.com",
+    "default_carrier": "Aero Freight"
+  },
+  {
+    "id": "SUP-108",
+    "name": "Aero Freight Carriers",
+    "aliases": ["Aero Freight", "Aero Cargo"],
+    "skus": [],
+    "lead_time_days": 3,
+    "region": "Global Air",
+    "contact": "ops@aerofreight.com",
+    "default_carrier": "Aero Freight"
+  },
+  {
+    "id": "SUP-109",
+    "name": "TransOcean Logistics",
+    "aliases": ["TransOcean", "TransOcean Maritime"],
+    "skus": [],
+    "lead_time_days": 15,
+    "region": "Pacific Maritime",
+    "contact": "dispatch@transocean.com",
+    "default_carrier": "TransOcean Logistics"
+  },
+  {
+    "id": "SUP-110",
+    "name": "EcoPack Solutions",
+    "aliases": ["EcoPack", "EcoPackaging Mexico"],
+    "skus": ["SKU-1011", "SKU-1012"],
+    "lead_time_days": 5,
+    "region": "Mexico",
+    "contact": "orders@ecopack.mx",
+    "default_carrier": "Border Trucking Co"
+  }
+]

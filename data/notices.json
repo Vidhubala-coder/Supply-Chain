@@ -1,0 +1,50 @@
+[
+  {
+    "id": "notice-1",
+    "title": "Apex Microelectronics Factory Fire (Clean Single Supplier)",
+    "category": "Clean Match",
+    "text": "URGENT DISRUPTION NOTICE: Apex Microelectronics (SUP-101) reports a major electrical fire at their primary fabrication facility in Hsinchu, Taiwan. Cleanroom 3 has been shut down for structural inspection and air quality restoration. As a direct result, all production of PMIC-8 Power Regulator chips (SKU-1002) is suspended until further notice. In-transit container shipment SHP-2002 aboard vessel TransOcean Logistics has been halted at port for customs audit and is estimated to be delayed by 14 days."
+  },
+  {
+    "id": "notice-2",
+    "title": "TransOcean Logistics Port Congestion (Carrier Delay)",
+    "category": "Carrier Delay",
+    "text": "PORT CONGESTION ADVISORY: TransOcean Logistics informs all cargo owners that severe weather and labor shortages at the Port of Long Beach have resulted in a 10-day discharge queue for all inbound container vessels from Asia. Display module shipment SHP-2003 containing 300 units of OLED-6 (SKU-1003) from Lumina Optics (SUP-102) is anchored offshore and ETA is pushed back by 10 days."
+  },
+  {
+    "id": "notice-3",
+    "title": "East Asian Component Contamination (Ambiguous Product Family)",
+    "category": "Ambiguous Match",
+    "text": "QUALITY ALERT: Semiconductor wafer contamination reported across high-capacity lithium battery modules and power regulator chips produced across East Asian facilities. Initial investigations point to chemical solvent batches affecting Apex Microelectronics and Titan Battery Systems production lines in Taiwan and Japan."
+  },
+  {
+    "id": "notice-4",
+    "title": "Nova Electronics Strike (Ambiguous Supplier Name)",
+    "category": "Ambiguous Match",
+    "text": "LABOR DISRUPTION ALERT: Unionized workers at Nova Precision Electronics have initiated an indefinite strike affecting sensor and precision fastener assembly facilities. Logistics dispatches for upcoming shipments are suspended."
+  },
+  {
+    "id": "notice-5",
+    "title": "Polymer Composites Resin Facility Storm (No Pending Impact Trap)",
+    "category": "No Impact Trap",
+    "text": "FLASH DISRUPTION: Polymer Composites Corp (SUP-104) Texas chemical facility suffered severe storm damage and flash flooding. ABS resin compounding plant will be offline for 3 weeks. Shipment SHP-2007 carrying 1500 units of ABS Enclosure Black (SKU-1006) is delayed by 21 days."
+  },
+  {
+    "id": "notice-6",
+    "title": "Typhoon Hinnamnor Disruption (Cascading Multi-SKU)",
+    "category": "Cascading Disruption",
+    "text": "SUPER TYPHOON WARNING: Typhoon Hinnamnor has grounded all cargo flights and sea freight departures out of Taiwan and South Korea. Air and sea hub shutdowns affect Apex Microelectronics (SUP-101), Lumina Optics (SUP-102), and Quantum Memory Corp (SUP-107). Shipments SHP-2001, SHP-2002, SHP-2003, and SHP-2006 are delayed by at least 21 days."
+  },
+  {
+    "id": "notice-7",
+    "title": "Nova Sensors German QC Hold",
+    "category": "Quality Hold",
+    "text": "CUSTOMS & QC HOLD: EuroAir Cargo shipment SHP-2005 carrying MEMS-6D Motion Sensors (SKU-1008) from Nova Sensors Inc (SUP-105) has been detained at Frankfurt hub due to regulatory documentation discrepancy. Expected delay: 8 days."
+  },
+  {
+    "id": "notice-8",
+    "title": "Q4 Promotional Marketing Campaign (Unrelated Notice / No Match)",
+    "category": "Unrelated Notice",
+    "text": "INTERNAL MARKETING MEMO: Q4 promotional campaign strategy for North American consumer electronics trade show. Please review attached branding guidelines for booth design and collateral."
+  }
+]

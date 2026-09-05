@@ -1,0 +1,58 @@
+[
+  {
+    "customer_id": "CUST-301",
+    "name": "Tesla Tech Industries",
+    "tier": "VIP",
+    "contact": "procurement@teslatech.com",
+    "region": "North America"
+  },
+  {
+    "customer_id": "CUST-302",
+    "name": "Apple Device Corp",
+    "tier": "VIP",
+    "contact": "supplychain@appledevice.com",
+    "region": "North America"
+  },
+  {
+    "customer_id": "CUST-303",
+    "name": "Medtronic Health Systems",
+    "tier": "VIP",
+    "contact": "logistics@medtronic.com",
+    "region": "Europe"
+  },
+  {
+    "customer_id": "CUST-304",
+    "name": "Standard Electronics LLC",
+    "tier": "Standard",
+    "contact": "orders@standardelec.com",
+    "region": "North America"
+  },
+  {
+    "customer_id": "CUST-305",
+    "name": "Global Retail Distributors",
+    "tier": "Standard",
+    "contact": "purchasing@globalretail.com",
+    "region": "Global"
+  },
+  {
+    "customer_id": "CUST-306",
+    "name": "Apex Robotics Ltd",
+    "tier": "VIP",
+    "contact": "ops@apexrobotics.com",
+    "region": "Asia-Pacific"
+  },
+  {
+    "customer_id": "CUST-307",
+    "name": "Consumer Tech Co",
+    "tier": "Standard",
+    "contact": "buyer@consumertech.com",
+    "region": "North America"
+  },
+  {
+    "customer_id": "CUST-308",
+    "name": "IoT Solutions Ltd",
+    "tier": "Standard",
+    "contact": "stock@iotsolutions.com",
+    "region": "Europe"
+  }
+]

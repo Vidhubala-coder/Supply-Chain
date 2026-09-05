@@ -1,0 +1,122 @@
+[
+  {
+    "sku": "SKU-1001",
+    "name": "MCU-32 Ultra Processor",
+    "on_hand": 500,
+    "reserved": 450,
+    "safety_stock": 200,
+    "unit_cost": 12.50,
+    "reorder_point": 300,
+    "supplier_id": "SUP-101"
+  },
+  {
+    "sku": "SKU-1002",
+    "name": "PMIC-8 Power Regulator",
+    "on_hand": 120,
+    "reserved": 300,
+    "safety_stock": 100,
+    "unit_cost": 4.20,
+    "reorder_point": 250,
+    "supplier_id": "SUP-101"
+  },
+  {
+    "sku": "SKU-1003",
+    "name": "OLED-6 Display Module",
+    "on_hand": 80,
+    "reserved": 200,
+    "safety_stock": 50,
+    "unit_cost": 45.00,
+    "reorder_point": 150,
+    "supplier_id": "SUP-102"
+  },
+  {
+    "sku": "SKU-1004",
+    "name": "Optical Lens 4K Assembly",
+    "on_hand": 350,
+    "reserved": 100,
+    "safety_stock": 150,
+    "unit_cost": 18.00,
+    "reorder_point": 200,
+    "supplier_id": "SUP-102"
+  },
+  {
+    "sku": "SKU-1005",
+    "name": "BAT-5000 Li-Ion Cell Pack",
+    "on_hand": 60,
+    "reserved": 180,
+    "safety_stock": 40,
+    "unit_cost": 32.00,
+    "reorder_point": 120,
+    "supplier_id": "SUP-103"
+  },
+  {
+    "sku": "SKU-1006",
+    "name": "ABS Enclosure Black",
+    "on_hand": 1000,
+    "reserved": 400,
+    "safety_stock": 300,
+    "unit_cost": 2.10,
+    "reorder_point": 500,
+    "supplier_id": "SUP-104"
+  },
+  {
+    "sku": "SKU-1007",
+    "name": "Polyresin Top Cover",
+    "on_hand": 200,
+    "reserved": 200,
+    "safety_stock": 100,
+    "unit_cost": 3.50,
+    "reorder_point": 150,
+    "supplier_id": "SUP-104"
+  },
+  {
+    "sku": "SKU-1008",
+    "name": "MEMS-6D Motion Sensor",
+    "on_hand": 40,
+    "reserved": 150,
+    "safety_stock": 80,
+    "unit_cost": 8.90,
+    "reorder_point": 100,
+    "supplier_id": "SUP-105"
+  },
+  {
+    "sku": "SKU-1009",
+    "name": "Ti Fastener Hardware Kit",
+    "on_hand": 2500,
+    "reserved": 1000,
+    "safety_stock": 500,
+    "unit_cost": 0.85,
+    "reorder_point": 1000,
+    "supplier_id": "SUP-106"
+  },
+  {
+    "sku": "SKU-1010",
+    "name": "Flash-128GB Storage Chip",
+    "on_hand": 150,
+    "reserved": 500,
+    "safety_stock": 100,
+    "unit_cost": 15.00,
+    "reorder_point": 300,
+    "supplier_id": "SUP-107"
+  },
+  {
+    "sku": "SKU-1011",
+    "name": "Eco Box Small Packaging",
+    "on_hand": 5000,
+    "reserved": 1000,
+    "safety_stock": 1000,
+    "unit_cost": 0.30,
+    "reorder_point": 2000,
+    "supplier_id": "SUP-110"
+  },
+  {
+    "sku": "SKU-1012",
+    "name": "Eco Box Large Packaging",
+    "on_hand": 4000,
+    "reserved": 800,
+    "safety_stock": 800,
+    "unit_cost": 0.60,
+    "reorder_point": 1500,
+    "supplier_id": "SUP-110"
+  }
+]

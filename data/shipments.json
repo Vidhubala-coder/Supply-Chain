@@ -1,0 +1,112 @@
+[
+  {
+    "shipment_id": "SHP-2001",
+    "supplier_id": "SUP-101",
+    "sku": "SKU-1001",
+    "qty": 1000,
+    "carrier": "Aero Freight",
+    "eta": "2026-09-12",
+    "status": "in_transit",
+    "origin": "Hsinchu, Taiwan",
+    "destination": "Central Warehouse West"
+  },
+  {
+    "shipment_id": "SHP-2002",
+    "supplier_id": "SUP-101",
+    "sku": "SKU-1002",
+    "qty": 500,
+    "carrier": "TransOcean Logistics",
+    "eta": "2026-09-15",
+    "status": "in_transit",
+    "origin": "Kaohsiung Port, Taiwan",
+    "destination": "Central Warehouse West"
+  },
+  {
+    "shipment_id": "SHP-2003",
+    "supplier_id": "SUP-102",
+    "sku": "SKU-1003",
+    "qty": 300,
+    "carrier": "TransOcean Logistics",
+    "eta": "2026-09-18",
+    "status": "in_transit",
+    "origin": "Busan, South Korea",
+    "destination": "Central Warehouse East"
+  },
+  {
+    "shipment_id": "SHP-2004",
+    "supplier_id": "SUP-103",
+    "sku": "SKU-1005",
+    "qty": 400,
+    "carrier": "Pacific Express",
+    "eta": "2026-09-20",
+    "status": "in_transit",
+    "origin": "Osaka, Japan",
+    "destination": "Central Warehouse West"
+  },
+  {
+    "shipment_id": "SHP-2005",
+    "supplier_id": "SUP-105",
+    "sku": "SKU-1008",
+    "qty": 250,
+    "carrier": "EuroAir Cargo",
+    "eta": "2026-09-14",
+    "status": "in_transit",
+    "origin": "Frankfurt, Germany",
+    "destination": "Central Warehouse East"
+  },
+  {
+    "shipment_id": "SHP-2006",
+    "supplier_id": "SUP-107",
+    "sku": "SKU-1010",
+    "qty": 800,
+    "carrier": "Aero Freight",
+    "eta": "2026-09-16",
+    "status": "in_transit",
+    "origin": "Taipei, Taiwan",
+    "destination": "Central Warehouse West"
+  },
+  {
+    "shipment_id": "SHP-2007",
+    "supplier_id": "SUP-104",
+    "sku": "SKU-1006",
+    "qty": 1500,
+    "carrier": "US Freight Express",
+    "eta": "2026-09-10",
+    "status": "in_transit",
+    "origin": "Houston, USA",
+    "destination": "Central Warehouse West"
+  },
+  {
+    "shipment_id": "SHP-2008",
+    "supplier_id": "SUP-106",
+    "sku": "SKU-1009",
+    "qty": 5000,
+    "carrier": "Asia Express Shipping",
+    "eta": "2026-09-22",
+    "status": "in_transit",
+    "origin": "Hai Phong, Vietnam",
+    "destination": "Central Warehouse East"
+  },
+  {
+    "shipment_id": "SHP-2009",
+    "supplier_id": "SUP-110",
+    "sku": "SKU-1011",
+    "qty": 3000,
+    "carrier": "Border Trucking Co",
+    "eta": "2026-09-08",
+    "status": "in_transit",
+    "origin": "Monterrey, Mexico",
+    "destination": "Central Warehouse West"
+  },
+  {
+    "shipment_id": "SHP-2010",
+    "supplier_id": "SUP-102",
+    "sku": "SKU-1004",
+    "qty": 400,
+    "carrier": "Aero Freight",
+    "eta": "2026-09-11",
+    "status": "in_transit",
+    "origin": "Incheon, South Korea",
+    "destination": "Central Warehouse East"
+  }
+]

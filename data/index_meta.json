@@ -1,0 +1,384 @@
+[
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-101",
+    "name": "Apex Microelectronics",
+    "text": "Supplier ID: SUP-101. Name: Apex Microelectronics. Aliases: Apex Micro, Apex Semiconductors, Apex Taiwan. Region: Taiwan. Carrier: Aero Freight. SKUs supplied: MCU-32 Ultra Processor, PMIC-8 Power Regulator.",
+    "metadata": {
+      "skus": [
+        "SKU-1001",
+        "SKU-1002"
+      ],
+      "region": "Taiwan",
+      "carrier": "Aero Freight"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-102",
+    "name": "Lumina Optics",
+    "text": "Supplier ID: SUP-102. Name: Lumina Optics. Aliases: Lumina Display, Lumina Korea. Region: South Korea. Carrier: TransOcean Logistics. SKUs supplied: OLED-6 Display Module, Optical Lens 4K Assembly.",
+    "metadata": {
+      "skus": [
+        "SKU-1003",
+        "SKU-1004"
+      ],
+      "region": "South Korea",
+      "carrier": "TransOcean Logistics"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-103",
+    "name": "Titan Battery Systems",
+    "text": "Supplier ID: SUP-103. Name: Titan Battery Systems. Aliases: Titan Energy, Titan Battery Japan. Region: Japan. Carrier: Pacific Express. SKUs supplied: BAT-5000 Li-Ion Cell Pack.",
+    "metadata": {
+      "skus": [
+        "SKU-1005"
+      ],
+      "region": "Japan",
+      "carrier": "Pacific Express"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-104",
+    "name": "Polymer Composites Corp",
+    "text": "Supplier ID: SUP-104. Name: Polymer Composites Corp. Aliases: Polymer Composites, Polymer USA. Region: USA. Carrier: US Freight Express. SKUs supplied: ABS Enclosure Black, Polyresin Top Cover.",
+    "metadata": {
+      "skus": [
+        "SKU-1006",
+        "SKU-1007"
+      ],
+      "region": "USA",
+      "carrier": "US Freight Express"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-105",
+    "name": "Nova Sensors Inc",
+    "text": "Supplier ID: SUP-105. Name: Nova Sensors Inc. Aliases: Nova Sensors, Nova MEMS Germany. Region: Germany. Carrier: EuroAir Cargo. SKUs supplied: MEMS-6D Motion Sensor.",
+    "metadata": {
+      "skus": [
+        "SKU-1008"
+      ],
+      "region": "Germany",
+      "carrier": "EuroAir Cargo"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-106",
+    "name": "Precision Fasteners Ltd",
+    "text": "Supplier ID: SUP-106. Name: Precision Fasteners Ltd. Aliases: Precision Fasteners, Precision Vietnam. Region: Vietnam. Carrier: Asia Express Shipping. SKUs supplied: Ti Fastener Hardware Kit.",
+    "metadata": {
+      "skus": [
+        "SKU-1009"
+      ],
+      "region": "Vietnam",
+      "carrier": "Asia Express Shipping"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-107",
+    "name": "Quantum Memory Corp",
+    "text": "Supplier ID: SUP-107. Name: Quantum Memory Corp. Aliases: Quantum Memory, Quantum Storage. Region: Taiwan. Carrier: Aero Freight. SKUs supplied: Flash-128GB Storage Chip.",
+    "metadata": {
+      "skus": [
+        "SKU-1010"
+      ],
+      "region": "Taiwan",
+      "carrier": "Aero Freight"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-108",
+    "name": "Aero Freight Carriers",
+    "text": "Supplier ID: SUP-108. Name: Aero Freight Carriers. Aliases: Aero Freight, Aero Cargo. Region: Global Air. Carrier: Aero Freight. SKUs supplied: .",
+    "metadata": {
+      "skus": [],
+      "region": "Global Air",
+      "carrier": "Aero Freight"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-109",
+    "name": "TransOcean Logistics",
+    "text": "Supplier ID: SUP-109. Name: TransOcean Logistics. Aliases: TransOcean, TransOcean Maritime. Region: Pacific Maritime. Carrier: TransOcean Logistics. SKUs supplied: .",
+    "metadata": {
+      "skus": [],
+      "region": "Pacific Maritime",
+      "carrier": "TransOcean Logistics"
+    }
+  },
+  {
+    "entity_type": "supplier",
+    "entity_id": "SUP-110",
+    "name": "EcoPack Solutions",
+    "text": "Supplier ID: SUP-110. Name: EcoPack Solutions. Aliases: EcoPack, EcoPackaging Mexico. Region: Mexico. Carrier: Border Trucking Co. SKUs supplied: Eco Box Small Packaging, Eco Box Large Packaging.",
+    "metadata": {
+      "skus": [
+        "SKU-1011",
+        "SKU-1012"
+      ],
+      "region": "Mexico",
+      "carrier": "Border Trucking Co"
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1001",
+    "name": "MCU-32 Ultra Processor",
+    "text": "Stock SKU: SKU-1001. Name: MCU-32 Ultra Processor. Supplier ID: SUP-101. On hand: 500, Reserved: 450, Safety stock: 200.",
+    "metadata": {
+      "supplier_id": "SUP-101",
+      "on_hand": 500,
+      "unit_cost": 12.5
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1002",
+    "name": "PMIC-8 Power Regulator",
+    "text": "Stock SKU: SKU-1002. Name: PMIC-8 Power Regulator. Supplier ID: SUP-101. On hand: 120, Reserved: 300, Safety stock: 100.",
+    "metadata": {
+      "supplier_id": "SUP-101",
+      "on_hand": 120,
+      "unit_cost": 4.2
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1003",
+    "name": "OLED-6 Display Module",
+    "text": "Stock SKU: SKU-1003. Name: OLED-6 Display Module. Supplier ID: SUP-102. On hand: 80, Reserved: 200, Safety stock: 50.",
+    "metadata": {
+      "supplier_id": "SUP-102",
+      "on_hand": 80,
+      "unit_cost": 45.0
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1004",
+    "name": "Optical Lens 4K Assembly",
+    "text": "Stock SKU: SKU-1004. Name: Optical Lens 4K Assembly. Supplier ID: SUP-102. On hand: 350, Reserved: 100, Safety stock: 150.",
+    "metadata": {
+      "supplier_id": "SUP-102",
+      "on_hand": 350,
+      "unit_cost": 18.0
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1005",
+    "name": "BAT-5000 Li-Ion Cell Pack",
+    "text": "Stock SKU: SKU-1005. Name: BAT-5000 Li-Ion Cell Pack. Supplier ID: SUP-103. On hand: 60, Reserved: 180, Safety stock: 40.",
+    "metadata": {
+      "supplier_id": "SUP-103",
+      "on_hand": 60,
+      "unit_cost": 32.0
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1006",
+    "name": "ABS Enclosure Black",
+    "text": "Stock SKU: SKU-1006. Name: ABS Enclosure Black. Supplier ID: SUP-104. On hand: 1000, Reserved: 400, Safety stock: 300.",
+    "metadata": {
+      "supplier_id": "SUP-104",
+      "on_hand": 1000,
+      "unit_cost": 2.1
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1007",
+    "name": "Polyresin Top Cover",
+    "text": "Stock SKU: SKU-1007. Name: Polyresin Top Cover. Supplier ID: SUP-104. On hand: 200, Reserved: 200, Safety stock: 100.",
+    "metadata": {
+      "supplier_id": "SUP-104",
+      "on_hand": 200,
+      "unit_cost": 3.5
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1008",
+    "name": "MEMS-6D Motion Sensor",
+    "text": "Stock SKU: SKU-1008. Name: MEMS-6D Motion Sensor. Supplier ID: SUP-105. On hand: 40, Reserved: 150, Safety stock: 80.",
+    "metadata": {
+      "supplier_id": "SUP-105",
+      "on_hand": 40,
+      "unit_cost": 8.9
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1009",
+    "name": "Ti Fastener Hardware Kit",
+    "text": "Stock SKU: SKU-1009. Name: Ti Fastener Hardware Kit. Supplier ID: SUP-106. On hand: 2500, Reserved: 1000, Safety stock: 500.",
+    "metadata": {
+      "supplier_id": "SUP-106",
+      "on_hand": 2500,
+      "unit_cost": 0.85
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1010",
+    "name": "Flash-128GB Storage Chip",
+    "text": "Stock SKU: SKU-1010. Name: Flash-128GB Storage Chip. Supplier ID: SUP-107. On hand: 150, Reserved: 500, Safety stock: 100.",
+    "metadata": {
+      "supplier_id": "SUP-107",
+      "on_hand": 150,
+      "unit_cost": 15.0
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1011",
+    "name": "Eco Box Small Packaging",
+    "text": "Stock SKU: SKU-1011. Name: Eco Box Small Packaging. Supplier ID: SUP-110. On hand: 5000, Reserved: 1000, Safety stock: 1000.",
+    "metadata": {
+      "supplier_id": "SUP-110",
+      "on_hand": 5000,
+      "unit_cost": 0.3
+    }
+  },
+  {
+    "entity_type": "stock_item",
+    "entity_id": "SKU-1012",
+    "name": "Eco Box Large Packaging",
+    "text": "Stock SKU: SKU-1012. Name: Eco Box Large Packaging. Supplier ID: SUP-110. On hand: 4000, Reserved: 800, Safety stock: 800.",
+    "metadata": {
+      "supplier_id": "SUP-110",
+      "on_hand": 4000,
+      "unit_cost": 0.6
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2001",
+    "name": "SHP-2001 (MCU-32 Ultra Processor)",
+    "text": "Shipment ID: SHP-2001. Supplier: SUP-101. SKU: SKU-1001 (MCU-32 Ultra Processor). Quantity: 1000. Carrier: Aero Freight. Status: in_transit. ETA: 2026-09-12. Origin: Hsinchu, Taiwan.",
+    "metadata": {
+      "supplier_id": "SUP-101",
+      "sku": "SKU-1001",
+      "carrier": "Aero Freight",
+      "eta": "2026-09-12"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2002",
+    "name": "SHP-2002 (PMIC-8 Power Regulator)",
+    "text": "Shipment ID: SHP-2002. Supplier: SUP-101. SKU: SKU-1002 (PMIC-8 Power Regulator). Quantity: 500. Carrier: TransOcean Logistics. Status: in_transit. ETA: 2026-09-15. Origin: Kaohsiung Port, Taiwan.",
+    "metadata": {
+      "supplier_id": "SUP-101",
+      "sku": "SKU-1002",
+      "carrier": "TransOcean Logistics",
+      "eta": "2026-09-15"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2003",
+    "name": "SHP-2003 (OLED-6 Display Module)",
+    "text": "Shipment ID: SHP-2003. Supplier: SUP-102. SKU: SKU-1003 (OLED-6 Display Module). Quantity: 300. Carrier: TransOcean Logistics. Status: in_transit. ETA: 2026-09-18. Origin: Busan, South Korea.",
+    "metadata": {
+      "supplier_id": "SUP-102",
+      "sku": "SKU-1003",
+      "carrier": "TransOcean Logistics",
+      "eta": "2026-09-18"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2004",
+    "name": "SHP-2004 (BAT-5000 Li-Ion Cell Pack)",
+    "text": "Shipment ID: SHP-2004. Supplier: SUP-103. SKU: SKU-1005 (BAT-5000 Li-Ion Cell Pack). Quantity: 400. Carrier: Pacific Express. Status: in_transit. ETA: 2026-09-20. Origin: Osaka, Japan.",
+    "metadata": {
+      "supplier_id": "SUP-103",
+      "sku": "SKU-1005",
+      "carrier": "Pacific Express",
+      "eta": "2026-09-20"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2005",
+    "name": "SHP-2005 (MEMS-6D Motion Sensor)",
+    "text": "Shipment ID: SHP-2005. Supplier: SUP-105. SKU: SKU-1008 (MEMS-6D Motion Sensor). Quantity: 250. Carrier: EuroAir Cargo. Status: in_transit. ETA: 2026-09-14. Origin: Frankfurt, Germany.",
+    "metadata": {
+      "supplier_id": "SUP-105",
+      "sku": "SKU-1008",
+      "carrier": "EuroAir Cargo",
+      "eta": "2026-09-14"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2006",
+    "name": "SHP-2006 (Flash-128GB Storage Chip)",
+    "text": "Shipment ID: SHP-2006. Supplier: SUP-107. SKU: SKU-1010 (Flash-128GB Storage Chip). Quantity: 800. Carrier: Aero Freight. Status: in_transit. ETA: 2026-09-16. Origin: Taipei, Taiwan.",
+    "metadata": {
+      "supplier_id": "SUP-107",
+      "sku": "SKU-1010",
+      "carrier": "Aero Freight",
+      "eta": "2026-09-16"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2007",
+    "name": "SHP-2007 (ABS Enclosure Black)",
+    "text": "Shipment ID: SHP-2007. Supplier: SUP-104. SKU: SKU-1006 (ABS Enclosure Black). Quantity: 1500. Carrier: US Freight Express. Status: in_transit. ETA: 2026-09-10. Origin: Houston, USA.",
+    "metadata": {
+      "supplier_id": "SUP-104",
+      "sku": "SKU-1006",
+      "carrier": "US Freight Express",
+      "eta": "2026-09-10"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2008",
+    "name": "SHP-2008 (Ti Fastener Hardware Kit)",
+    "text": "Shipment ID: SHP-2008. Supplier: SUP-106. SKU: SKU-1009 (Ti Fastener Hardware Kit). Quantity: 5000. Carrier: Asia Express Shipping. Status: in_transit. ETA: 2026-09-22. Origin: Hai Phong, Vietnam.",
+    "metadata": {
+      "supplier_id": "SUP-106",
+      "sku": "SKU-1009",
+      "carrier": "Asia Express Shipping",
+      "eta": "2026-09-22"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2009",
+    "name": "SHP-2009 (Eco Box Small Packaging)",
+    "text": "Shipment ID: SHP-2009. Supplier: SUP-110. SKU: SKU-1011 (Eco Box Small Packaging). Quantity: 3000. Carrier: Border Trucking Co. Status: in_transit. ETA: 2026-09-08. Origin: Monterrey, Mexico.",
+    "metadata": {
+      "supplier_id": "SUP-110",
+      "sku": "SKU-1011",
+      "carrier": "Border Trucking Co",
+      "eta": "2026-09-08"
+    }
+  },
+  {
+    "entity_type": "shipment",
+    "entity_id": "SHP-2010",
+    "name": "SHP-2010 (Optical Lens 4K Assembly)",
+    "text": "Shipment ID: SHP-2010. Supplier: SUP-102. SKU: SKU-1004 (Optical Lens 4K Assembly). Quantity: 400. Carrier: Aero Freight. Status: in_transit. ETA: 2026-09-11. Origin: Incheon, South Korea.",
+    "metadata": {
+      "supplier_id": "SUP-102",
+      "sku": "SKU-1004",
+      "carrier": "Aero Freight",
+      "eta": "2026-09-11"
+    }
+  }
+]
