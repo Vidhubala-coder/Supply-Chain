@@ -59,27 +59,47 @@ Output schema:
 }
 """
 
+from llm.policy_retrieval import retrieve_policy_snippets
+
 def narrate_plan(impact_report: Dict[str, Any]) -> Dict[str, Any]:
     """
     Stage 4 Plan Narration:
     Passes Stage 2-3 deterministic impact report to Gemini LLM with strict grounding constraints.
+    Optionally retrieves policy citations from local policy index and attaches them to output.
     Falls back to deterministic narration formatting if Gemini API is unreachable or times out (>15s).
     """
     affected_orders = impact_report.get("affected_orders", [])
     total_affected = impact_report.get("total_orders_affected", len(affected_orders))
+
+    # Retrieve relevant policy snippets based on impact report details
+    query = f"Disruption impact {total_affected} orders customer tier safety stock expedite policy"
+    policy_snippets = retrieve_policy_snippets(query, top_k=2)
+    policy_citations = [
+        {
+            "filename": p["filename"],
+            "heading": p["heading"],
+            "citation": p["citation"],
+            "snippet": p["snippet"]
+        }
+        for p in policy_snippets
+    ]
 
     # Explicit check for No Impact
     if total_affected == 0 or not affected_orders:
         return {
             "headline": "No pending customer orders affected by this disruption notice.",
             "affected_orders": [],
-            "no_impact": True
+            "no_impact": True,
+            "policy_citations": policy_citations
         }
 
     # Prepare input payload for Gemini
     prompt = f"""
 STAGE 2-3 DETERMINISTIC IMPACT ASSESSMENT INPUT:
 {json.dumps(impact_report, indent=2)}
+
+POLICY DOCUMENTS CONTEXT:
+{json.dumps(policy_citations, indent=2)}
 """
 
     llm_output = generate_json_with_timeout(
@@ -89,7 +109,7 @@ STAGE 2-3 DETERMINISTIC IMPACT ASSESSMENT INPUT:
     )
 
     if llm_output and "headline" in llm_output and "affected_orders" in llm_output:
-        # Attach evidence and options from Stage 3 input so deterministic evidence is never dropped
+        # Attach evidence, options, and policy citations
         impact_by_ord = {o["order_id"]: o for o in affected_orders}
         for n_ord in llm_output.get("affected_orders", []):
             oid = n_ord.get("order_id")
@@ -99,6 +119,7 @@ STAGE 2-3 DETERMINISTIC IMPACT ASSESSMENT INPUT:
                 n_ord.setdefault("options", orig.get("options", []))
                 n_ord.setdefault("recommended_option", orig.get("recommended_option"))
                 n_ord.setdefault("recommendation_reason", orig.get("recommendation_reason"))
+        llm_output["policy_citations"] = policy_citations
         return llm_output
 
     # -------------------------------------------------------------
@@ -130,5 +151,6 @@ STAGE 2-3 DETERMINISTIC IMPACT ASSESSMENT INPUT:
         "headline": headline,
         "affected_orders": narrated_orders,
         "no_impact": False,
+        "policy_citations": policy_citations,
         "is_fallback": True
     }
