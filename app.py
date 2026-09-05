@@ -246,6 +246,7 @@ def analyze_disruption(req: AnalyzeRequest):
         "stage3": stage3_impact,
         "stage4": stage4,
         "match_found": True,
+        "match_state": "EXACT",
         "short_circuited": False,
         "timeline": [e for e in audit_log if e.get("notice_id") == req.notice_id or e.get("stage")]
     }

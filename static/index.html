@@ -10,228 +10,300 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <div class="app-shell">
-    <!-- Slim Header Bar -->
-    <header class="app-header">
-      <div class="header-brand">
-        <svg class="duotone-icon chrome-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-        <h1 class="header-title">Supply Chain Disruption Assistant</h1>
-        <span class="header-track">TRACK_ID=PS08</span>
+  <div class="app-shell flex-row">
+    <!-- Sidebar Navigation Shell -->
+    <aside class="app-sidebar">
+      <div class="sidebar-brand">
+        <svg class="duotone-icon chrome-icon" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        <span class="brand-name">Nexus Logistics</span>
       </div>
 
-      <div class="header-controls">
+      <nav class="sidebar-nav">
+        <button class="nav-item active" id="nav-dashboard" data-view="dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" id="nav-disruptions" data-view="disruptions">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          <span>Disruptions</span>
+        </button>
+        <button class="nav-item" id="nav-escalations" data-view="escalations">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          <span>Escalations</span>
+          <span class="badge badge-escalations" id="sidebar-escalations-badge">0</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
         <div class="status-pill" id="system-status-pill">
           <span class="status-dot"></span>
-          <span id="status-text">Checking API status...</span>
-        </div>
-        <button class="btn btn-secondary" id="btn-open-audit">
-          <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
-          Audit log (<span id="audit-count" class="mono-num">0</span>)
-        </button>
-        <button class="btn btn-secondary" id="btn-open-index">
-          <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
-          Data index
-        </button>
-      </div>
-    </header>
-
-    <!-- KPI Hero Strip (Top of page) -->
-    <section class="kpi-hero-strip" aria-label="Operational KPI summary">
-      <div class="kpi-container">
-        <div class="kpi-grid">
-          <div class="kpi-block">
-            <div class="kpi-number mono-num" id="kpi-orders-affected">0</div>
-            <div class="kpi-label">Orders Affected</div>
-          </div>
-          <div class="kpi-block">
-            <div class="kpi-number mono-num" id="kpi-total-risk">0.0</div>
-            <div class="kpi-label">Total Urgency-Weighted Risk</div>
-          </div>
-          <div class="kpi-block">
-            <div class="kpi-number mono-num" id="kpi-cost-at-risk">$0.00</div>
-            <div class="kpi-label">Est. Cost at Risk</div>
-          </div>
-          <div class="kpi-block">
-            <div class="kpi-number mono-num" id="kpi-nearest-deadline">-</div>
-            <div class="kpi-label">Nearest Deadline</div>
-          </div>
-
-          <!-- Urgency Distribution Mini-Chart Inline -->
-          <div class="kpi-chart-block">
-            <div class="chart-header">
-              <span class="kpi-label">Urgency Distribution</span>
-            </div>
-            <div class="mini-dist-bar" id="mini-dist-bar">
-              <div class="dist-segment seg-good" id="seg-good" style="width: 33%" title="Low Urgency (0-40): 0 orders"></div>
-              <div class="dist-segment seg-warn" id="seg-warn" style="width: 33%" title="Medium Urgency (41-70): 0 orders"></div>
-              <div class="dist-segment seg-critical" id="seg-critical" style="width: 34%" title="High Urgency (71-100): 0 orders"></div>
-            </div>
-            <div class="chart-legend">
-              <span class="legend-item"><span class="legend-dot status-good-dot"></span><span id="legend-good-count" class="mono-num">0</span> Low</span>
-              <span class="legend-item"><span class="legend-dot status-warn-dot"></span><span id="legend-warn-count" class="mono-num">0</span> Med</span>
-              <span class="legend-item"><span class="legend-dot status-critical-dot"></span><span id="legend-critical-count" class="mono-num">0</span> High</span>
-            </div>
-          </div>
+          <span id="status-text">Checking API...</span>
         </div>
       </div>
-    </section>
+    </aside>
 
-    <!-- Slim Pipeline Stage Trace Strip -->
-    <div class="pipeline-trace-strip" aria-label="Pipeline execution progress">
-      <div class="trace-step" id="trace-step-1">
-        <span class="trace-dot"></span>
-        <span class="trace-name">Retrieval</span>
-      </div>
-      <span class="trace-arrow">&rarr;</span>
-      <div class="trace-step" id="trace-step-2">
-        <span class="trace-dot"></span>
-        <span class="trace-name">Resolve</span>
-      </div>
-      <span class="trace-arrow">&rarr;</span>
-      <div class="trace-step" id="trace-step-3">
-        <span class="trace-dot"></span>
-        <span class="trace-name">Graph</span>
-      </div>
-      <span class="trace-arrow">&rarr;</span>
-      <div class="trace-step" id="trace-step-4">
-        <span class="trace-dot"></span>
-        <span class="trace-name">Rank</span>
-      </div>
-      <span class="trace-arrow">&rarr;</span>
-      <div class="trace-step" id="trace-step-5">
-        <span class="trace-dot"></span>
-        <span class="trace-name">Narrate</span>
-      </div>
-    </div>
-
-    <!-- Precision Grid Main Layout -->
-    <main class="grid-layout">
-      <!-- Left Panel: Input & Scenario Selector -->
-      <aside class="panel-input">
-        <div class="form-group">
-          <label for="sample-notice-select" class="form-label">Sample disruption scenario</label>
-          <select id="sample-notice-select" class="form-select">
-            <option value="">Select a pre-loaded scenario...</option>
-          </select>
+    <!-- Main Content Area -->
+    <div class="main-content-wrapper">
+      <!-- Slim Header Bar -->
+      <header class="app-header">
+        <div class="header-brand">
+          <h1 class="header-title" id="page-view-title">Dashboard Overview</h1>
+          <span class="header-track">TRACK_ID=PS08</span>
         </div>
 
-        <div class="form-group">
-          <label for="notice-textarea" class="form-label">Disruption notice text</label>
-          <textarea id="notice-textarea" class="form-textarea" placeholder="Paste unstructured disruption advisory or email text here..."></textarea>
-          <span class="keyboard-hint">Press <kbd id="cmd-key-label">Ctrl</kbd>+<kbd>Enter</kbd> to analyze notice</span>
-        </div>
-
-        <div class="form-group">
-          <button class="btn btn-primary btn-block" id="btn-analyze">
-            <span class="spinner" id="analyze-spinner" style="display:none;"></span>
-            <span id="btn-analyze-text">Run impact pipeline</span>
+        <div class="header-controls">
+          <button class="btn btn-secondary" id="btn-open-audit">
+            <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            Audit log (<span id="audit-count" class="mono-num">0</span>)
+          </button>
+          <button class="btn btn-secondary" id="btn-open-index">
+            <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Data index
           </button>
         </div>
+      </header>
 
-        <div class="scenario-info-box" id="notice-meta-card" style="display:none;">
-          <div class="info-row">
-            <span class="info-label">Category:</span>
-            <span class="info-value" id="meta-category">-</span>
-          </div>
-          <div class="info-desc" id="meta-desc"></div>
-        </div>
-      </aside>
-
-      <!-- Right Panel: Results & Manifest -->
-      <section class="panel-results">
-        <!-- Initial Empty State with 2-Color Geometric SVG Illustration -->
-        <div class="empty-state" id="empty-state">
-          <div class="empty-illustration-wrap">
-            <svg class="empty-state-svg" width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="8" y="12" width="48" height="40" rx="8" fill="#4F46E5" fill-opacity="0.06" stroke="#4F46E5" stroke-width="2"/>
-              <path d="M8 24H56" stroke="#4F46E5" stroke-width="2"/>
-              <path d="M20 12V52" stroke="#6B7280" stroke-width="1.5" stroke-dasharray="3 3"/>
-              <circle cx="44" cy="38" r="10" fill="#FFFFFF" stroke="#4F46E5" stroke-width="2"/>
-              <path d="M41 38L43 40L47 36" stroke="#4F46E5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <h2>Ready for disruption analysis</h2>
-          <p>Paste a disruption notice above or choose a scenario on the left, then press <kbd>Ctrl</kbd>+<kbd>Enter</kbd> to analyze.</p>
-        </div>
-
-        <!-- Skeleton Loading Placeholder Rows -->
-        <div class="skeleton-container" id="skeleton-loading-container" style="display:none;">
-          <div class="skeleton-row">
-            <div class="skeleton-block sk-small"></div>
-            <div class="skeleton-block sk-medium"></div>
-            <div class="skeleton-block sk-small"></div>
-            <div class="skeleton-block sk-large"></div>
-          </div>
-          <div class="skeleton-row">
-            <div class="skeleton-block sk-small"></div>
-            <div class="skeleton-block sk-medium"></div>
-            <div class="skeleton-block sk-small"></div>
-            <div class="skeleton-block sk-large"></div>
-          </div>
-          <div class="skeleton-row">
-            <div class="skeleton-block sk-small"></div>
-            <div class="skeleton-block sk-medium"></div>
-            <div class="skeleton-block sk-small"></div>
-            <div class="skeleton-block sk-large"></div>
-          </div>
-        </div>
-
-        <!-- Full-Width Banner ONLY for No Impact / No Match -->
-        <div class="outcome-banner" id="no-impact-alert" style="display:none;">
-          <div class="banner-illustration-wrap">
-            <svg class="no-impact-illustration" width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="6" y="14" width="36" height="26" rx="4" fill="#4F46E5" fill-opacity="0.08" stroke="#4F46E5" stroke-width="2"/>
-              <path d="M6 22H42" stroke="#4F46E5" stroke-width="2" stroke-linecap="round"/>
-              <path d="M24 14V40" stroke="#4F46E5" stroke-width="2" stroke-dasharray="2 2"/>
-              <circle cx="36" cy="12" r="10" fill="#16A34A" fill-opacity="0.12" stroke="#16A34A" stroke-width="2"/>
-              <path d="M31 12L34.5 15.5L41 9" stroke="#16A34A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-          <div class="banner-body">
-            <div class="banner-header">
-              <h2 id="alert-title">No impact detected</h2>
-              <span class="badge" id="callout-badge-text">Resolved clear</span>
+      <!-- View 1: Top-Level Dashboard Landing Screen -->
+      <section class="view-pane" id="view-dashboard" style="display: block;">
+        <div class="dashboard-container">
+          <div class="dashboard-kpi-grid">
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-val mono-num" id="dash-active-disruptions">1</div>
+              <div class="dash-kpi-lbl">Active Disruptions</div>
             </div>
-            <p id="alert-body" class="banner-desc"></p>
-            <div class="banner-meta" id="alert-tags"></div>
-          </div>
-        </div>
-
-        <!-- Execution Details Container with Typewriter Narration -->
-        <div class="execution-block" id="pipeline-details-container" style="display:none;">
-          <div class="headline-bar" id="headline-text" title="Click anywhere to reveal full narration text instantly">Headline Summary</div>
-
-          <div class="stage-summary-grid">
-            <div class="summary-card">
-              <div class="card-label">Stage 1: Entity Resolution</div>
-              <div class="card-value" id="stage1-summary">-</div>
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-val mono-num" id="dash-orders-at-risk">3</div>
+              <div class="dash-kpi-lbl">Orders at Risk</div>
             </div>
-            <div class="summary-card">
-              <div class="card-label">Stage 2: Graph Traversal</div>
-              <div class="card-value" id="stage2-summary">-</div>
+            <div class="dash-kpi-card">
+              <div class="dash-kpi-val mono-num" id="dash-customers-impacted">2</div>
+              <div class="dash-kpi-lbl">Customers Impacted</div>
+            </div>
+            <div class="dash-kpi-card status-warn-card">
+              <div class="dash-kpi-val mono-num" id="dash-pending-escalations">0</div>
+              <div class="dash-kpi-lbl">Pending Escalations</div>
             </div>
           </div>
-        </div>
 
-        <!-- Affected Orders Clean Row Manifest -->
-        <div class="manifest-container" id="action-cards-section" style="display:none;">
-          <div class="manifest-top">
-            <div>
-              <h2>Affected order manifest</h2>
-              <span class="manifest-sub">Ranked by calculated urgency score. Recommend, never act.</span>
+          <div class="dashboard-recent-grid">
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h2>Quick Disruption Analysis</h2>
+                <button class="btn btn-primary btn-sm" onclick="switchView('disruptions')">Open Analyzer &rarr;</button>
+              </div>
+              <p class="text-muted">Analyze unstructured disruption notices, evaluate 4-way response trade-offs, and run grounded policy citations.</p>
             </div>
-            <button class="btn btn-secondary" id="btn-export-pdf" style="display:none;">
-              <svg class="btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-              Export action plan
-            </button>
+            <div class="dash-panel">
+              <div class="dash-panel-header">
+                <h2>Recent Pipeline Actions</h2>
+              </div>
+              <div id="dash-recent-actions-list" class="dash-recent-list">
+                <span class="text-muted">No recent pipeline decisions logged.</span>
+              </div>
+            </div>
           </div>
-          <div class="manifest-rows" id="action-cards-list"></div>
         </div>
       </section>
-    </main>
+
+      <!-- View 2: Disruptions Analyze Screen -->
+      <section class="view-pane" id="view-disruptions" style="display: none;">
+        <!-- KPI Hero Strip -->
+        <section class="kpi-hero-strip" aria-label="Operational KPI summary">
+          <div class="kpi-container">
+            <div class="kpi-grid">
+              <div class="kpi-block">
+                <div class="kpi-number mono-num" id="kpi-orders-affected">0</div>
+                <div class="kpi-label">Orders Affected</div>
+              </div>
+              <div class="kpi-block">
+                <div class="kpi-number mono-num" id="kpi-total-risk">0.0</div>
+                <div class="kpi-label">Total Urgency Risk</div>
+              </div>
+              <div class="kpi-block">
+                <div class="kpi-number mono-num" id="kpi-cost-at-risk">$0.00</div>
+                <div class="kpi-label">Est. Cost at Risk</div>
+              </div>
+              <div class="kpi-block">
+                <div class="kpi-number mono-num" id="kpi-nearest-deadline">-</div>
+                <div class="kpi-label">Nearest Deadline</div>
+              </div>
+              <div class="kpi-chart-block">
+                <div class="chart-header"><span class="kpi-label">Urgency Distribution</span></div>
+                <div class="mini-dist-bar" id="mini-dist-bar">
+                  <div class="dist-segment seg-good" id="seg-good" style="width: 33%"></div>
+                  <div class="dist-segment seg-warn" id="seg-warn" style="width: 33%"></div>
+                  <div class="dist-segment seg-critical" id="seg-critical" style="width: 34%"></div>
+                </div>
+                <div class="chart-legend">
+                  <span class="legend-item"><span class="legend-dot status-good-dot"></span><span id="legend-good-count" class="mono-num">0</span> Low</span>
+                  <span class="legend-item"><span class="legend-dot status-warn-dot"></span><span id="legend-warn-count" class="mono-num">0</span> Med</span>
+                  <span class="legend-item"><span class="legend-dot status-critical-dot"></span><span id="legend-critical-count" class="mono-num">0</span> High</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Pipeline Stage Trace Strip -->
+        <div class="pipeline-trace-strip" aria-label="Pipeline execution progress">
+          <div class="trace-step" id="trace-step-1"><span class="trace-dot"></span><span class="trace-name">Retrieval</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-2"><span class="trace-dot"></span><span class="trace-name">Resolve</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-3"><span class="trace-dot"></span><span class="trace-name">Graph</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-4"><span class="trace-dot"></span><span class="trace-name">Rank</span></div>
+          <span class="trace-arrow">&rarr;</span>
+          <div class="trace-step" id="trace-step-5"><span class="trace-dot"></span><span class="trace-name">Narrate</span></div>
+        </div>
+
+        <!-- Main Layout -->
+        <main class="grid-layout">
+          <!-- Left Panel -->
+          <aside class="panel-input">
+            <div class="form-group">
+              <label for="sample-notice-select" class="form-label">Sample disruption scenario</label>
+              <select id="sample-notice-select" class="form-select">
+                <option value="">Select a pre-loaded scenario...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label for="notice-textarea" class="form-label">Disruption notice text</label>
+              <textarea id="notice-textarea" class="form-textarea" placeholder="Paste disruption notice text..."></textarea>
+              <span class="keyboard-hint">Press <kbd id="cmd-key-label">Ctrl</kbd>+<kbd>Enter</kbd> to analyze notice</span>
+            </div>
+
+            <div class="form-group">
+              <button class="btn btn-primary btn-block" id="btn-analyze">
+                <span class="spinner" id="analyze-spinner" style="display:none;"></span>
+                <span id="btn-analyze-text">Run impact pipeline</span>
+              </button>
+            </div>
+
+            <div class="scenario-info-box" id="notice-meta-card" style="display:none;">
+              <div class="info-row"><span class="info-label">Category:</span><span class="info-value" id="meta-category">-</span></div>
+              <div class="info-desc" id="meta-desc"></div>
+            </div>
+          </aside>
+
+          <!-- Right Panel -->
+          <section class="panel-results">
+            <!-- Empty State -->
+            <div class="empty-state" id="empty-state">
+              <h2>Ready for disruption analysis</h2>
+              <p>Select a scenario or paste notice text on the left, then press <kbd>Ctrl</kbd>+<kbd>Enter</kbd>.</p>
+            </div>
+
+            <!-- Skeleton Loading -->
+            <div class="skeleton-container" id="skeleton-loading-container" style="display:none;">
+              <div class="skeleton-row"><div class="skeleton-block sk-large"></div></div>
+              <div class="skeleton-row"><div class="skeleton-block sk-large"></div></div>
+            </div>
+
+            <!-- Banner for No Impact / Ambiguous / Contradiction -->
+            <div class="outcome-banner" id="no-impact-alert" style="display:none;">
+              <div class="banner-body">
+                <div class="banner-header">
+                  <h2 id="alert-title">Analysis Result</h2>
+                  <span class="badge" id="callout-badge-text">Result</span>
+                </div>
+                <p id="alert-body" class="banner-desc"></p>
+                <div class="banner-meta" id="alert-tags"></div>
+                <div id="ambiguous-candidates-wrap" style="display:none; margin-top: 16px;"></div>
+                <div id="contradiction-action-wrap" style="display:none; margin-top: 16px;">
+                  <button class="btn btn-escalate" onclick="escalateCurrentNotice()">Escalate Incident to Manager</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pipeline Execution & Narration Details -->
+            <div class="execution-block" id="pipeline-details-container" style="display:none;">
+              <div class="headline-bar" id="headline-text">Headline Summary</div>
+
+              <div class="stage-summary-grid">
+                <div class="summary-card">
+                  <div class="card-label">Stage 1: Entity Resolution</div>
+                  <div class="card-value" id="stage1-summary">-</div>
+                </div>
+                <div class="summary-card">
+                  <div class="card-label">Stage 2: Graph Traversal</div>
+                  <div class="card-value" id="stage2-summary">-</div>
+                </div>
+              </div>
+
+              <!-- Document Policy Citations -->
+              <div class="policy-citations-block" id="policy-citations-wrap" style="display:none;">
+                <div class="block-heading">Document Policy Citations</div>
+                <div id="policy-citations-list" class="policy-list"></div>
+              </div>
+
+              <!-- Decision Timeline Container -->
+              <div class="timeline-block" id="decision-timeline-wrap" style="display:none;">
+                <div class="block-heading">Decision Timeline Audit Trail</div>
+                <div id="decision-timeline-list" class="timeline-list"></div>
+              </div>
+            </div>
+
+            <!-- Affected Orders Manifest & Side-by-Side What-If Comparison -->
+            <div class="manifest-container" id="action-cards-section" style="display:none;">
+              <div class="manifest-top">
+                <div>
+                  <h2>Affected order manifest & What-If comparison</h2>
+                  <span class="manifest-sub">Compare all 4 response options side-by-side per order before approving.</span>
+                </div>
+                <button class="btn btn-secondary" id="btn-export-pdf" style="display:none;">Export action plan</button>
+              </div>
+              <div class="manifest-rows" id="action-cards-list"></div>
+            </div>
+          </section>
+        </main>
+      </section>
+
+      <!-- View 3: Escalations Manager Screen -->
+      <section class="view-pane" id="view-escalations" style="display: none;">
+        <div class="escalations-container">
+          <div class="escalations-header">
+            <h2>Pending Incident Escalations</h2>
+            <p class="text-muted">Review ambiguous matches, critical data contradictions, and human-escalated disruption notices.</p>
+          </div>
+          <div id="escalations-list" class="escalations-list-container">
+            <div class="empty-state">
+              <h3>No active escalations</h3>
+              <p class="text-muted">All disruption notices have been resolved or confirmed.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
   </div>
 
-  <!-- Slide-Over Panel for Clickable Record-ID Grounding Citations -->
+  <!-- Evidence / "Why?" Slide-Over Panel -->
+  <div class="slideover-backdrop" id="evidence-slideover-backdrop" style="display:none;">
+    <div class="slideover-pane" id="evidence-slideover">
+      <div class="slideover-header">
+        <div>
+          <span class="slideover-tag">Mathematical Proof & Evidence</span>
+          <h2 id="evidence-slideover-title">Metric Evidence Calculation</h2>
+        </div>
+        <button class="btn-close" id="btn-close-evidence" aria-label="Close slide-over">&times;</button>
+      </div>
+      <div class="slideover-body">
+        <div class="evidence-box">
+          <div class="field-pair"><span class="field-key">Source Table:</span><span class="field-val mono-num" id="ev-source-table">-</span></div>
+          <div class="field-pair"><span class="field-key">Record IDs:</span><span class="field-val mono-num" id="ev-record-ids">-</span></div>
+          <div class="field-pair"><span class="field-key">Formula String:</span><span class="field-val mono-num" id="ev-formula-string">-</span></div>
+          <div class="field-pair"><span class="field-key">Calculated Result:</span><span class="field-val mono-num" id="ev-calculated-result">-</span></div>
+        </div>
+        <div class="raw-json-wrap">
+          <span class="field-key">Raw Inputs & Intermediate Values</span>
+          <pre id="ev-raw-values-json" class="json-code"></pre>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Record Citation Slide-Over Panel -->
   <div class="slideover-backdrop" id="slideover-backdrop" style="display:none;">
     <div class="slideover-pane" id="record-slideover">
       <div class="slideover-header">
@@ -255,7 +327,7 @@
   <div class="modal-backdrop" id="audit-modal" style="display:none;">
     <div class="modal-window">
       <div class="modal-header">
-        <h2>Operator decision log</h2>
+        <h2>Operator decision & timeline log</h2>
         <button class="btn-close" id="btn-close-audit" aria-label="Close modal">&times;</button>
       </div>
       <div class="modal-body">
@@ -264,10 +336,10 @@
             <tr>
               <th>ID</th>
               <th>Time</th>
-              <th>Order ID</th>
-              <th>Action</th>
-              <th>Decision</th>
-              <th>Operator notes</th>
+              <th>Order / Ref</th>
+              <th>Stage / Action</th>
+              <th>Status</th>
+              <th>Details / Notes</th>
             </tr>
           </thead>
           <tbody id="audit-table-body">
@@ -297,9 +369,7 @@
     </div>
   </div>
 
-  <!-- Toast Notification Container (Bottom-Right) -->
   <div class="toast-container" id="toast-container"></div>
-
   <script src="/static/app.js"></script>
 </body>
 </html>
