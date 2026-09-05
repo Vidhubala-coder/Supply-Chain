@@ -10,22 +10,24 @@
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <!-- Login Modal Overlay -->
+  <!-- Authentication Modal Overlay (Login & Register) -->
   <div class="modal-overlay" id="login-modal-overlay" style="display: flex;">
-    <div class="login-modal-card">
+    <!-- Card 1: Login Form -->
+    <div class="login-modal-card" id="auth-card-login">
       <div class="login-header">
         <div class="login-brand-logo">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-          <h2>Supply Chain Control Tower</h2>
+          <h2>SUPPLYCHAIN AI</h2>
         </div>
-        <p class="login-subtitle">Enterprise Operations Login — Select role or enter credentials</p>
+        <h3 class="auth-title">Supply Chain Control Tower</h3>
+        <p class="login-subtitle">Sign in to continue to enterprise operations</p>
       </div>
 
       <div class="quick-demo-roles">
-        <span class="demo-label">Quick Sign-In Demo Roles:</span>
+        <span class="demo-label">Quick Sign-In Demo Accounts:</span>
         <div class="demo-buttons-row">
           <button class="btn btn-secondary btn-sm" id="btn-quick-admin">
-            <span class="role-badge role-admin">ADMIN</span> Login as Executive Admin
+            <span class="role-badge role-admin">ADMIN</span> Login as Admin (vidhub657@gmail.com)
           </button>
           <button class="btn btn-secondary btn-sm" id="btn-quick-manager">
             <span class="role-badge role-manager">OPS MANAGER</span> Login as Ops Manager
@@ -35,18 +37,72 @@
 
       <form id="login-form" class="login-form">
         <div class="form-group">
-          <label for="login-username" class="form-label">Username</label>
-          <input type="text" id="login-username" class="form-input" placeholder="admin or manager" required>
+          <label for="login-email" class="form-label">Email Address</label>
+          <input type="email" id="login-email" class="form-input" placeholder="vidhub657@gmail.com or registered email" required>
         </div>
         <div class="form-group">
           <label for="login-password" class="form-label">Password</label>
-          <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+          <div class="pw-input-wrapper">
+            <input type="password" id="login-password" class="form-input" placeholder="••••••••" required>
+            <button type="button" class="btn-toggle-pw" id="btn-toggle-login-pw" title="Toggle password visibility">👁</button>
+          </div>
         </div>
         <div class="login-error-msg" id="login-error-msg" style="display:none;"></div>
-        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-login">Sign In to Control Tower &rarr;</button>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-login">Sign In &rarr;</button>
       </form>
-      <div class="login-footer">
-        <span>TRACK_ID=PS08 • "Gemini understands. Python calculates. Evidence proves. Humans decide."</span>
+
+      <div class="auth-switch-footer">
+        <span>Don't have an account?</span>
+        <a href="#" id="link-show-register" class="auth-link">Create Account</a>
+      </div>
+    </div>
+
+    <!-- Card 2: Register Form -->
+    <div class="login-modal-card" id="auth-card-register" style="display: none;">
+      <div class="login-header">
+        <div class="login-brand-logo">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+          <h2>SUPPLYCHAIN AI</h2>
+        </div>
+        <h3 class="auth-title">Create Your Account</h3>
+        <p class="login-subtitle">Register for operational access as Operations Manager</p>
+      </div>
+
+      <form id="register-form" class="login-form">
+        <div class="form-group">
+          <label for="reg-name" class="form-label">Full Name *</label>
+          <input type="text" id="reg-name" class="form-input" placeholder="John Doe" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-email" class="form-label">Email Address *</label>
+          <input type="email" id="reg-email" class="form-input" placeholder="user@company.com" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-password" class="form-label">Password *</label>
+          <input type="password" id="reg-password" class="form-input" placeholder="Minimum 6 characters" required>
+        </div>
+        <div class="form-group">
+          <label for="reg-confirm-password" class="form-label">Confirm Password *</label>
+          <input type="password" id="reg-confirm-password" class="form-input" placeholder="Repeat password" required>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label for="reg-department" class="form-label">Department (Optional)</label>
+            <input type="text" id="reg-department" class="form-input" placeholder="Logistics">
+          </div>
+          <div class="form-group">
+            <label for="reg-phone" class="form-label">Phone (Optional)</label>
+            <input type="text" id="reg-phone" class="form-input" placeholder="+1 555-0192">
+          </div>
+        </div>
+        <div class="login-error-msg" id="reg-error-msg" style="display:none;"></div>
+        <div class="login-success-msg" id="reg-success-msg" style="display:none;"></div>
+        <button type="submit" class="btn btn-primary btn-block btn-lg" id="btn-submit-register">Create Account &rarr;</button>
+      </form>
+
+      <div class="auth-switch-footer">
+        <span>Already have an account?</span>
+        <a href="#" id="link-show-login" class="auth-link">Sign In</a>
       </div>
     </div>
   </div>

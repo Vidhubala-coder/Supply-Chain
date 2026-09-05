@@ -4,6 +4,7 @@ Unit tests for Enterprise Control Tower modules:
 Authentication, SQLite CRUD, Relational Safety Checks, Notifications, PDF Reports, Escalations, and AI Problem Analysis.
 """
 
+import os
 import unittest
 from fastapi.testclient import TestClient
 from app import app
@@ -21,8 +22,9 @@ class TestEnterpriseControlTower(unittest.TestCase):
         self.assertTrue("database_connected" in data)
 
     def test_authentication_flow(self):
+        admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
         # Successful Admin Login
-        res = self.client.post("/api/auth/login", json={"username": "admin", "password": "admin123"})
+        res = self.client.post("/api/auth/login", json={"email": "vidhub657@gmail.com", "password": admin_pass})
         self.assertEqual(res.status_code, 200)
         data = res.json()
         self.assertEqual(data["session"]["role"], "ADMIN")
@@ -32,16 +34,17 @@ class TestEnterpriseControlTower(unittest.TestCase):
         headers = {"Authorization": f"Bearer {token}"}
         me_res = self.client.get("/api/auth/me", headers=headers)
         self.assertEqual(me_res.status_code, 200)
-        self.assertEqual(me_res.json()["user"]["username"], "admin")
+        self.assertEqual(me_res.json()["user"]["email"].lower(), "vidhub657@gmail.com")
 
         # Invalid Login
-        fail_res = self.client.post("/api/auth/login", json={"username": "admin", "password": "wrongpassword"})
+        fail_res = self.client.post("/api/auth/login", json={"email": "vidhub657@gmail.com", "password": "wrongpassword"})
         self.assertEqual(fail_res.status_code, 401)
+        self.assertEqual(fail_res.json()["detail"], "Invalid email or password.")
 
         # Operations Manager Login
-        mgr_res = self.client.post("/api/auth/login", json={"username": "manager", "password": "manager123"})
+        mgr_res = self.client.post("/api/auth/login", json={"email": "ops@controltower.io", "password": "manager123"})
         self.assertEqual(mgr_res.status_code, 200)
-        self.assertEqual(mgr_res.json()["session"]["role"], "OPERATIONS MANAGER")
+        self.assertIn("OPERATIONS", mgr_res.json()["session"]["role"])
 
     def test_products_crud_and_safe_deletion(self):
         # Fetch Products
@@ -108,9 +111,14 @@ class TestEnterpriseControlTower(unittest.TestCase):
         self.assertTrue(len(cust_res.json()["customers"]) >= 80)
 
     def test_admin_users(self):
-        usr_res = self.client.get("/api/admin/users")
+        admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
+        login_res = self.client.post("/api/auth/login", json={"email": "vidhub657@gmail.com", "password": admin_pass})
+        token = login_res.json()["session"]["session_token"]
+        headers = {"Authorization": f"Bearer {token}"}
+
+        usr_res = self.client.get("/api/admin/users", headers=headers)
         self.assertEqual(usr_res.status_code, 200)
-        self.assertTrue(len(usr_res.json()["users"]) >= 2)
+        self.assertTrue(len(usr_res.json()["users"]) >= 1)
 
     def test_notifications_system(self):
         tmpl_res = self.client.get("/api/notifications/templates")

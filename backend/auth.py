@@ -1,32 +1,135 @@
 """
 backend/auth.py
-Authentication & Session Management module.
-Supports ADMIN and OPERATIONS MANAGER roles with secure PBKDF2/SHA256 password hashing.
+Enterprise Authentication & Role-Based Access Control (RBAC) System.
+Enforces registration flow, reserved admin account (vidhub657@gmail.com),
+environment-driven admin passwords, and session management.
 """
 
+import os
+import re
 import uuid
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
-from fastapi import HTTPException, Header, Depends
-from backend.database import get_db_connection, verify_password
+from fastapi import HTTPException, Header
+from dotenv import load_dotenv
 
-# In-memory session store mapping session token -> user dict
+from backend.database import get_db_connection, hash_password, verify_password
+
+load_dotenv()
+
+ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "vidhub657@gmail.com").strip().lower()
+
+# In-memory session store mapping session_token -> user dict
 SESSIONS: Dict[str, Dict[str, Any]] = {}
 
-def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
+def check_startup_admin_config():
+    """Startup verification of ADMIN_PASSWORD configuration."""
+    admin_pass = os.environ.get("ADMIN_PASSWORD", "").strip()
+    if not admin_pass:
+        print("\n" + "="*80)
+        print("CONFIG WARNING: ADMIN_PASSWORD is not configured. Add it to the .env file before starting the application.")
+        print("="*80 + "\n")
+
+# Run startup check on import
+check_startup_admin_config()
+
+def get_admin_password() -> str:
+    return os.environ.get("ADMIN_PASSWORD", "").strip()
+
+def is_admin_email(email: str) -> bool:
+    if not email:
+        return False
+    return email.strip().lower() == ADMIN_EMAIL
+
+def register_user(name: str, email: str, password: str, confirm_password: str, department: Optional[str] = None, phone: Optional[str] = None) -> Tuple[bool, str]:
+    if not name or not email or not password or not confirm_password:
+        return False, "Please complete all required fields."
+
+    email_clean = email.strip().lower()
+
+    # Rule 2 & 5: Admin email cannot be registered through public registration
+    if is_admin_email(email_clean):
+        return False, "This email is reserved for the administrator."
+
+    # Validate email format
+    email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
+    if not re.match(email_regex, email_clean):
+        return False, "Please enter a valid email address."
+
+    # Password match
+    if password != confirm_password:
+        return False, "Passwords do not match."
+
+    # Minimum password strength
+    if len(password) < 6:
+        return False, "Password does not meet the required security criteria."
+
+    # Check duplicate email
     conn = get_db_connection()
     c = conn.cursor()
-    row = c.execute("SELECT id, username, password_hash, name, email, role, status FROM users WHERE username = ?", (username,)).fetchone()
+    existing = c.execute("SELECT id FROM users WHERE LOWER(email) = ? OR LOWER(username) = ?", (email_clean, email_clean)).fetchone()
+    if existing:
+        conn.close()
+        return False, "An account with this email already exists."
+
+    user_id = f"USR-{uuid.uuid4().hex[:6].upper()}"
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    pw_hash = hash_password(password)
+    default_role = "OPERATIONS_MANAGER"
+
+    c.execute("""
+        INSERT INTO users (id, username, password_hash, name, email, role, status, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    """, (user_id, email_clean, pw_hash, name.strip(), email_clean, default_role, "ACTIVE", now_str))
+    conn.commit()
+    conn.close()
+
+    return True, "Account created successfully. Please sign in with your registered credentials."
+
+def authenticate_user(email_input: str, password_input: str) -> Tuple[Optional[Dict[str, Any]], str]:
+    if not email_input or not password_input:
+        return None, "Invalid email or password."
+
+    email_clean = email_input.strip().lower()
+    admin_pass = get_admin_password()
+
+    # Rule 4: Admin Account Authentication against .env ADMIN_PASSWORD
+    if is_admin_email(email_clean):
+        if not admin_pass or password_input != admin_pass:
+            return None, "Invalid email or password."
+
+        # Admin login successful
+        token = str(uuid.uuid4())
+        session_data = {
+            "session_token": token,
+            "user_id": "USR-ADMIN",
+            "username": ADMIN_EMAIL,
+            "name": "Administrator",
+            "email": ADMIN_EMAIL,
+            "role": "ADMIN",
+            "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
+        }
+        SESSIONS[token] = session_data
+        return session_data, "Login successful"
+
+    # Normal User Authentication against SQLite DB
+    conn = get_db_connection()
+    c = conn.cursor()
+    row = c.execute("""
+        SELECT id, username, password_hash, name, email, role, status 
+        FROM users 
+        WHERE LOWER(email) = ? OR LOWER(username) = ?
+    """, (email_clean, email_clean)).fetchone()
     conn.close()
 
     if not row:
-        return None
+        return None, "Invalid email or password."
 
     user = dict(row)
     if user["status"] != "ACTIVE":
-        return None
+        return None, "Invalid email or password."
 
-    if verify_password(password, user["password_hash"]):
+    if verify_password(password_input, user["password_hash"]):
         token = str(uuid.uuid4())
         session_data = {
             "session_token": token,
@@ -34,13 +137,13 @@ def authenticate_user(username: str, password: str) -> Optional[Dict[str, Any]]:
             "username": user["username"],
             "name": user["name"],
             "email": user["email"],
-            "role": user["role"],
+            "role": user.get("role", "OPERATIONS_MANAGER"),
             "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
         }
         SESSIONS[token] = session_data
-        return session_data
+        return session_data, "Login successful"
 
-    return None
+    return None, "Invalid email or password."
 
 def get_current_session(authorization: Optional[str] = Header(None)) -> Optional[Dict[str, Any]]:
     if not authorization:
@@ -49,7 +152,6 @@ def get_current_session(authorization: Optional[str] = Header(None)) -> Optional
     session = SESSIONS.get(token)
     if not session:
         return None
-    # Check expiry
     if datetime.fromisoformat(session["expires_at"]) < datetime.now():
         del SESSIONS[token]
         return None

@@ -663,3 +663,77 @@ kbd { background-color: var(--bg-subtle); border: 1px solid var(--border); paddi
 
 .step-title { font-size: 13px; font-weight: 700; }
 .step-time { font-size: 11px; color: var(--text-muted); }
+
+/* Authentication UI Extensions */
+.auth-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+  margin-top: 8px;
+}
+
+.pw-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.btn-toggle-pw {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text-muted);
+  padding: 4px;
+}
+
+.auth-switch-footer {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.auth-link {
+  color: var(--accent-primary);
+  font-weight: 600;
+  text-decoration: none;
+  margin-left: 6px;
+}
+
+.auth-link:hover {
+  text-decoration: underline;
+}
+
+.login-error-msg {
+  background-color: var(--status-critical-bg);
+  color: var(--status-critical);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  border: 1px solid #FCA5A5;
+}
+
+.login-success-msg {
+  background-color: var(--status-good-bg);
+  color: var(--status-good);
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  border: 1px solid #86EFAC;
+}
+
+.form-row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+

@@ -18,9 +18,11 @@ from backend.database import (
     init_db, get_db_connection, hash_password,
     fetch_suppliers, fetch_stock, fetch_shipments, fetch_orders, fetch_customers,
     safe_delete_product, safe_delete_supplier, safe_delete_warehouse,
-    safe_delete_customer, safe_delete_user
+    safe_delete_customer, safe_delete_user, toggle_user_status
 )
-from backend.auth import authenticate_user, get_current_session, invalidate_session
+from backend.auth import (
+    authenticate_user, register_user, get_current_session, invalidate_session, is_admin_email
+)
 from backend.notifications import create_notification, get_all_notifications, get_templates
 from backend.reports import generate_report, get_reports_list, generate_pdf_bytes
 
@@ -70,8 +72,17 @@ def load_data_file(filename: str) -> List[Dict[str, Any]]:
 
 # Request Models
 class LoginRequest(BaseModel):
-    username: str
+    email: Optional[str] = None
+    username: Optional[str] = None
     password: str
+
+class RegisterRequest(BaseModel):
+    name: str
+    email: str
+    password: str
+    confirm_password: str
+    department: Optional[str] = None
+    phone: Optional[str] = None
 
 class AnalyzeRequest(BaseModel):
     notice_text: Optional[str] = None
@@ -157,12 +168,15 @@ class CustomerModel(BaseModel):
 
 class UserModel(BaseModel):
     id: Optional[str] = None
-    username: str
+    username: Optional[str] = None
+    email: str
     password: Optional[str] = "password123"
     name: str
-    email: str
-    role: str
+    role: Optional[str] = "OPERATIONS_MANAGER"
     status: Optional[str] = "ACTIVE"
+
+class UserStatusRequest(BaseModel):
+    status: str
 
 class NotificationRequest(BaseModel):
     sender: str
@@ -181,6 +195,13 @@ class EscalationRequest(BaseModel):
     severity: str
     related_disruption_id: Optional[str] = None
     assigned_to: Optional[str] = "Lead Ops Manager"
+
+# Authorization Helper
+def require_admin(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
+    session = get_current_session(authorization)
+    if not session or session.get("role") != "ADMIN":
+        raise HTTPException(status_code=403, detail="Access denied. Administrator permissions required.")
+    return session
 
 # ROOT & HEALTH
 @app.get("/")
@@ -206,11 +227,19 @@ def health_check():
     }
 
 # AUTHENTICATION
+@app.post("/api/auth/register")
+def register(req: RegisterRequest):
+    success, msg = register_user(req.name, req.email, req.password, req.confirm_password, req.department, req.phone)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"status": "success", "message": msg}
+
 @app.post("/api/auth/login")
 def login(req: LoginRequest):
-    session = authenticate_user(req.username, req.password)
+    email_or_user = req.email or req.username or ""
+    session, msg = authenticate_user(email_or_user, req.password)
     if not session:
-        raise HTTPException(status_code=401, detail="Invalid username or password.")
+        raise HTTPException(status_code=401, detail=msg)
     return {"status": "success", "session": session}
 
 @app.post("/api/auth/logout")
@@ -516,7 +545,6 @@ def escalate_action(req: ActionRequest):
     audit_log.append(entry)
     log_timeline_event(stage="Escalated", details=f"Incident for {req.order_id} escalated to management.", order_id=req.order_id, status="ESCALATED")
     
-    # Also log to DB escalations
     conn = get_db_connection()
     esc_id = f"ESC-{uuid.uuid4().hex[:6].upper()}"
     conn.execute("INSERT INTO escalations VALUES (?,?,?,?,?,?,?)", (esc_id, req.recommendation_reason or "Human escalation triggered", "HIGH", None, "PENDING", "Lead Ops Manager", datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -741,28 +769,47 @@ def delete_customer(customer_id: str):
         raise HTTPException(status_code=400, detail=msg)
     return {"status": "success", "message": msg}
 
-# 8. ADMIN USER MANAGEMENT
+# 8. ADMIN USER MANAGEMENT (Backend RBAC Enforced)
 @app.get("/api/admin/users")
-def get_users():
+def get_users(admin: Dict[str, Any] = Depends(require_admin)):
     conn = get_db_connection()
     rows = conn.execute("SELECT id, username, name, email, role, status, created_at FROM users ORDER BY id ASC").fetchall()
     conn.close()
     return {"users": [dict(r) for r in rows]}
 
 @app.post("/api/admin/users")
-def create_user(u: UserModel):
+def create_user(u: UserModel, admin: Dict[str, Any] = Depends(require_admin)):
+    email_clean = (u.email or u.username or "").strip().lower()
+
+    if is_admin_email(email_clean):
+        raise HTTPException(status_code=400, detail="This email is reserved for the administrator.")
+
     conn = get_db_connection()
     u_id = u.id or f"USR-{uuid.uuid4().hex[:4].upper()}"
     pw_hash = hash_password(u.password or "password123")
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?,?)", (u_id, u.username, pw_hash, u.name, u.email, u.role, u.status, now_str))
-    conn.commit()
+    role = u.role or "OPERATIONS_MANAGER"
+
+    try:
+        conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?,?)", (u_id, email_clean, pw_hash, u.name, email_clean, role, u.status or "ACTIVE", now_str))
+        conn.commit()
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=400, detail="User account already exists.")
+
     conn.close()
     return {"status": "success", "id": u_id}
 
 @app.delete("/api/admin/users/{user_id}")
-def delete_user(user_id: str):
+def delete_user(user_id: str, admin: Dict[str, Any] = Depends(require_admin)):
     success, msg = safe_delete_user(user_id)
+    if not success:
+        raise HTTPException(status_code=400, detail=msg)
+    return {"status": "success", "message": msg}
+
+@app.post("/api/admin/users/{user_id}/status")
+def change_user_status(user_id: str, req: UserStatusRequest, admin: Dict[str, Any] = Depends(require_admin)):
+    success, msg = toggle_user_status(user_id, req.status)
     if not success:
         raise HTTPException(status_code=400, detail=msg)
     return {"status": "success", "message": msg}

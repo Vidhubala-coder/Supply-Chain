@@ -11,20 +11,62 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function setupEventListeners() {
-  // Login Form
+  // Login Form Submission
   const loginForm = document.getElementById("login-form");
   if (loginForm) {
     loginForm.addEventListener("submit", (e) => {
       e.preventDefault();
-      const u = document.getElementById("login-username").value.trim();
-      const p = document.getElementById("login-password").value.trim();
-      login(u, p);
+      const email = document.getElementById("login-email").value.trim();
+      const password = document.getElementById("login-password").value.trim();
+      login(email, password);
     });
   }
 
+  // Registration Form Submission
+  const regForm = document.getElementById("register-form");
+  if (regForm) {
+    regForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      register();
+    });
+  }
+
+  // Toggle Login/Register Cards
+  document.getElementById("link-show-register")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("auth-card-login").style.display = "none";
+    document.getElementById("auth-card-register").style.display = "block";
+  });
+
+  document.getElementById("link-show-login")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("auth-card-register").style.display = "none";
+    document.getElementById("auth-card-login").style.display = "block";
+  });
+
+  // Password Visibility Toggle
+  document.getElementById("btn-toggle-login-pw")?.addEventListener("click", () => {
+    const pwInput = document.getElementById("login-password");
+    if (pwInput.type === "password") {
+      pwInput.type = "text";
+    } else {
+      pwInput.type = "password";
+    }
+  });
+
   // Quick Demo Login Buttons
-  document.getElementById("btn-quick-admin")?.addEventListener("click", () => login("admin", "admin123"));
-  document.getElementById("btn-quick-manager")?.addEventListener("click", () => login("manager", "manager123"));
+  document.getElementById("btn-quick-admin")?.addEventListener("click", () => {
+    document.getElementById("login-email").value = "vidhub657@gmail.com";
+    document.getElementById("login-password").value = "admin123";
+    login("vidhub657@gmail.com", "admin123");
+  });
+
+  document.getElementById("btn-quick-manager")?.addEventListener("click", () => {
+    document.getElementById("login-email").value = "ops@controltower.io";
+    document.getElementById("login-password").value = "manager123";
+    login("ops@controltower.io", "manager123");
+  });
+
   document.getElementById("btn-logout")?.addEventListener("click", logout);
 
   // Navigation Items
@@ -85,7 +127,54 @@ async function checkAuth() {
   }
 }
 
-async function login(username, password) {
+async function register() {
+  const name = document.getElementById("reg-name").value.trim();
+  const email = document.getElementById("reg-email").value.trim();
+  const password = document.getElementById("reg-password").value.trim();
+  const confirmPassword = document.getElementById("reg-confirm-password").value.trim();
+  const department = document.getElementById("reg-department").value.trim();
+  const phone = document.getElementById("reg-phone").value.trim();
+
+  const errBox = document.getElementById("reg-error-msg");
+  const succBox = document.getElementById("reg-success-msg");
+  if (errBox) errBox.style.display = "none";
+  if (succBox) succBox.style.display = "none";
+
+  try {
+    const res = await fetch("/api/auth/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name, email, password, confirm_password: confirmPassword, department, phone
+      })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.status === "success") {
+      if (succBox) {
+        succBox.textContent = data.message || "Account created successfully. Please sign in.";
+        succBox.style.display = "block";
+      }
+      setTimeout(() => {
+        document.getElementById("login-email").value = email;
+        document.getElementById("auth-card-register").style.display = "none";
+        document.getElementById("auth-card-login").style.display = "block";
+      }, 1500);
+    } else {
+      if (errBox) {
+        errBox.textContent = data.detail || "Registration failed.";
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = "Network error connecting to server.";
+      errBox.style.display = "block";
+    }
+  }
+}
+
+async function login(email, password) {
   const errBox = document.getElementById("login-error-msg");
   if (errBox) errBox.style.display = "none";
 
@@ -93,7 +182,7 @@ async function login(username, password) {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password })
+      body: JSON.stringify({ email, password })
     });
     const data = await res.json();
 
@@ -106,13 +195,13 @@ async function login(username, password) {
       loadInitialData();
     } else {
       if (errBox) {
-        errBox.textContent = data.detail || "Invalid login credentials.";
+        errBox.textContent = data.detail || "Invalid email or password.";
         errBox.style.display = "block";
       }
     }
   } catch (err) {
     if (errBox) {
-      errBox.textContent = "Network error connecting to auth server.";
+      errBox.textContent = "Invalid email or password.";
       errBox.style.display = "block";
     }
   }
@@ -134,6 +223,8 @@ async function logout() {
 function showLoginModal() {
   const overlay = document.getElementById("login-modal-overlay");
   if (overlay) overlay.style.display = "flex";
+  document.getElementById("auth-card-register").style.display = "none";
+  document.getElementById("auth-card-login").style.display = "block";
 }
 
 function hideLoginModal() {
@@ -160,6 +251,13 @@ function updateUserUI() {
   }
 }
 
+function authHeaders() {
+  return {
+    "Content-Type": "application/json",
+    "Authorization": `Bearer ${currentSessionToken}`
+  };
+}
+
 function switchView(viewId) {
   document.querySelectorAll(".view-pane").forEach((pane) => {
     pane.style.display = "none";
@@ -177,13 +275,11 @@ function switchView(viewId) {
     targetPane.style.display = "block";
   }
 
-  // Update Page Title
   const titleEl = document.getElementById("page-view-title");
   if (titleEl) {
     titleEl.textContent = viewId.replace("-", " ").toUpperCase();
   }
 
-  // Load specific view data
   switch (viewId) {
     case "dashboard": loadDashboard(); break;
     case "products": loadProducts(); break;
@@ -209,7 +305,7 @@ async function loadInitialData() {
 
 async function loadSampleNotices() {
   try {
-    const res = await fetch("/api/sample-notices");
+    const res = await fetch("/api/sample-notices", { headers: authHeaders() });
     const data = await res.json();
     const select = document.getElementById("sample-notice-select");
     if (select && data.notices) {
@@ -231,21 +327,19 @@ async function loadSampleNotices() {
 async function loadDashboard() {
   try {
     const [disRes, shipRes, escRes] = await Promise.all([
-      fetch("/api/disruptions"),
-      fetch("/api/shipments"),
-      fetch("/api/escalations")
+      fetch("/api/disruptions", { headers: authHeaders() }),
+      fetch("/api/shipments", { headers: authHeaders() }),
+      fetch("/api/escalations", { headers: authHeaders() })
     ]);
 
     const disruptions = (await disRes.json()).disruptions || [];
     const shipments = (await shipRes.json()).shipments || [];
     const escalations = (await escRes.json()).escalations || [];
 
-    // KPI Values
     document.getElementById("dash-active-disruptions").textContent = disruptions.filter(d => d.status !== 'RESOLVED').length;
     document.getElementById("dash-pending-escalations").textContent = escalations.filter(e => e.status === 'PENDING').length;
     document.getElementById("sidebar-escalations-badge").textContent = escalations.filter(e => e.status === 'PENDING').length;
 
-    // Shipment stats
     const delCount = shipments.filter(s => s.status === 'DELIVERED').length;
     const transCount = shipments.filter(s => s.status === 'IN TRANSIT').length;
     const delayCount = shipments.filter(s => s.status === 'DELAYED').length;
@@ -256,7 +350,6 @@ async function loadDashboard() {
     document.getElementById("ship-count-delayed").textContent = delayCount;
     document.getElementById("ship-count-cancelled").textContent = cancelCount;
 
-    // Disruptions Table
     const disTbody = document.getElementById("dash-disruptions-tbody");
     if (disTbody) {
       disTbody.innerHTML = disruptions.slice(0, 5).map(d => `
@@ -272,7 +365,6 @@ async function loadDashboard() {
       `).join('');
     }
 
-    // Shipments Table
     const shipTbody = document.getElementById("dash-shipments-tbody");
     if (shipTbody) {
       shipTbody.innerHTML = shipments.slice(0, 5).map(s => `
@@ -290,7 +382,7 @@ async function loadDashboard() {
 
 async function loadProducts() {
   try {
-    const res = await fetch("/api/products");
+    const res = await fetch("/api/products", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("products-table-tbody");
     if (tbody && data.products) {
@@ -315,7 +407,7 @@ async function loadProducts() {
 
 async function loadSuppliers() {
   try {
-    const res = await fetch("/api/suppliers");
+    const res = await fetch("/api/suppliers", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("suppliers-table-tbody");
     if (tbody && data.suppliers) {
@@ -339,7 +431,7 @@ async function loadSuppliers() {
 
 async function loadWarehouses() {
   try {
-    const res = await fetch("/api/warehouses");
+    const res = await fetch("/api/warehouses", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("warehouses-table-tbody");
     if (tbody && data.warehouses) {
@@ -359,7 +451,7 @@ async function loadWarehouses() {
 
 async function loadInventory() {
   try {
-    const res = await fetch("/api/inventory");
+    const res = await fetch("/api/inventory", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("inventory-table-tbody");
     if (tbody && data.inventory) {
@@ -387,7 +479,7 @@ async function loadInventory() {
 
 async function loadShipments() {
   try {
-    const res = await fetch("/api/shipments");
+    const res = await fetch("/api/shipments", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("shipments-table-tbody");
     if (tbody && data.shipments) {
@@ -411,7 +503,7 @@ async function loadShipments() {
 
 async function loadOrders() {
   try {
-    const res = await fetch("/api/orders");
+    const res = await fetch("/api/orders", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("orders-table-tbody");
     if (tbody && data.orders) {
@@ -433,7 +525,7 @@ async function loadOrders() {
 
 async function loadCustomers() {
   try {
-    const res = await fetch("/api/customers");
+    const res = await fetch("/api/customers", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("customers-table-tbody");
     if (tbody && data.customers) {
@@ -453,7 +545,7 @@ async function loadCustomers() {
 
 async function loadDisruptions() {
   try {
-    const res = await fetch("/api/disruptions");
+    const res = await fetch("/api/disruptions", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("disruptions-table-tbody");
     if (tbody && data.disruptions) {
@@ -475,7 +567,7 @@ async function loadDisruptions() {
 
 async function loadAIAnalysis() {
   try {
-    const res = await fetch("/api/ai-analysis");
+    const res = await fetch("/api/ai-analysis", { headers: authHeaders() });
     const data = await res.json();
     document.getElementById("ai-prob-summary").textContent = data.problem_summary;
     document.getElementById("ai-prob-cause").textContent = data.reported_cause;
@@ -506,7 +598,7 @@ async function loadAIAnalysis() {
 
 async function loadNotifications() {
   try {
-    const res = await fetch("/api/notifications");
+    const res = await fetch("/api/notifications", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("notifications-sent-tbody");
     if (tbody && data.notifications) {
@@ -526,7 +618,7 @@ async function loadNotifications() {
 
 async function loadReports() {
   try {
-    const res = await fetch("/api/reports");
+    const res = await fetch("/api/reports", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("reports-table-tbody");
     if (tbody && data.reports) {
@@ -550,7 +642,7 @@ async function loadReports() {
 
 async function loadEscalations() {
   try {
-    const res = await fetch("/api/escalations");
+    const res = await fetch("/api/escalations", { headers: authHeaders() });
     const data = await res.json();
     const tbody = document.getElementById("escalations-table-tbody");
     if (tbody && data.escalations) {
@@ -571,23 +663,56 @@ async function loadEscalations() {
 
 async function loadAdminUsers() {
   try {
-    const res = await fetch("/api/admin/users");
+    const res = await fetch("/api/admin/users", { headers: authHeaders() });
+    if (!res.ok) {
+      alert("Access denied. Admin role required.");
+      switchView("dashboard");
+      return;
+    }
     const data = await res.json();
     const tbody = document.getElementById("admin-users-tbody");
     if (tbody && data.users) {
-      tbody.innerHTML = data.users.map(u => `
-        <tr>
-          <td class="mono-num">${u.id}</td>
-          <td><strong>${u.username}</strong></td>
-          <td>${u.name}</td>
-          <td>${u.email}</td>
-          <td><span class="role-badge ${u.role === 'ADMIN' ? 'role-admin' : 'role-manager'}">${u.role}</span></td>
-          <td><span class="badge badge-healthy">${u.status}</span></td>
-          <td><button class="btn btn-danger btn-sm" onclick="confirmDelete('user', '${u.id}')">Delete</button></td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = data.users.map(u => {
+        const isAdmin = u.email.toLowerCase() === "vidhub657@gmail.com" || u.role === "ADMIN";
+        const actionBtn = isAdmin
+          ? `<span class="badge badge-exact">Protected Account</span>`
+          : `
+            <button class="btn btn-secondary btn-sm" onclick="toggleUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}')">${u.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDelete('user', '${u.id}')">Delete</button>
+          `;
+
+        return `
+          <tr>
+            <td class="mono-num">${u.id}</td>
+            <td><strong>${u.username}</strong></td>
+            <td>${u.name}</td>
+            <td>${u.email}</td>
+            <td><span class="role-badge ${u.role === 'ADMIN' ? 'role-admin' : 'role-manager'}">${u.role}</span></td>
+            <td><span class="badge ${u.status === 'ACTIVE' ? 'badge-healthy' : 'badge-critical'}">${u.status}</span></td>
+            <td>${actionBtn}</td>
+          </tr>
+        `;
+      }).join('');
     }
   } catch (err) {}
+}
+
+async function toggleUserStatus(userId, newStatus) {
+  try {
+    const res = await fetch(`/api/admin/users/${userId}/status`, {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ status: newStatus })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      loadAdminUsers();
+    } else {
+      alert(data.detail || "Error updating user status.");
+    }
+  } catch (err) {
+    alert("Network error updating status.");
+  }
 }
 
 /* ==========================================================================
@@ -614,7 +739,7 @@ async function runImpactPipeline() {
   try {
     const res = await fetch("/api/analyze", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ notice_text: noticeText })
     });
     const data = await res.json();
@@ -630,7 +755,6 @@ async function runImpactPipeline() {
 }
 
 function renderPipelineResults(data) {
-  // Render Impact Chain Diagram
   const chainRow = document.getElementById("chain-nodes-row");
   if (chainRow) {
     const stage2 = data.stage2 || {};
@@ -651,12 +775,10 @@ function renderPipelineResults(data) {
     `;
   }
 
-  // Render Narration & Recommendation
   const stage4 = data.stage4 || {};
   document.getElementById("narration-headline").textContent = stage4.headline || "Disruption Impact Calculated";
   document.getElementById("narration-body").textContent = stage4.reason || "Python calculated stock shortfall across pending customer orders.";
 
-  // Render Affected Orders
   const ordersTbody = document.getElementById("affected-orders-tbody");
   if (ordersTbody) {
     const orders = stage4.affected_orders || (data.stage3 ? data.stage3.affected_orders : []);
@@ -674,7 +796,6 @@ function renderPipelineResults(data) {
     `).join('');
   }
 
-  // Render What-If 4-Option Cards
   renderWhatIfOptions(data.stage3);
 }
 
@@ -713,7 +834,7 @@ async function sendNotification() {
   try {
     const res = await fetch("/api/notifications", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({
         sender: currentUser ? currentUser.email : "ops@controltower.io",
         recipient, subject, reason, message
@@ -730,7 +851,7 @@ async function generateReport() {
   try {
     const res = await fetch("/api/reports/generate", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: authHeaders(),
       body: JSON.stringify({ period: "2026-09" })
     });
     if (res.ok) {
@@ -778,7 +899,10 @@ function confirmDelete(type, id) {
   if (btn) {
     btn.onclick = async () => {
       try {
-        const res = await fetch(`/api/${type}s/${id}`, { method: "DELETE" });
+        const res = await fetch(`/api/${type}s/${id}`, {
+          method: "DELETE",
+          headers: authHeaders()
+        });
         const data = await res.json();
 
         if (res.ok && data.status === "success") {

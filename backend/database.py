@@ -223,15 +223,18 @@ def seed_initial_data(conn: sqlite3.Connection):
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # 1. Seed Users
-    cursor.execute("SELECT COUNT(*) FROM users")
+    cursor.execute("SELECT COUNT(*) FROM users WHERE LOWER(email) = 'vidhub657@gmail.com' OR id = 'USR-ADMIN'")
     if cursor.fetchone()[0] == 0:
+        cursor.execute("INSERT OR REPLACE INTO users VALUES (?,?,?,?,?,?,?,?)", ("USR-ADMIN", "vidhub657@gmail.com", "ENV_MANAGED", "System Administrator", "vidhub657@gmail.com", "ADMIN", "ACTIVE", now_str))
+
+    cursor.execute("SELECT COUNT(*) FROM users")
+    if cursor.fetchone()[0] <= 1:
         users = [
-            ("USR-001", "admin", hash_password("admin123"), "Executive Admin", "admin@controltower.io", "ADMIN", "ACTIVE", now_str),
-            ("USR-002", "manager", hash_password("manager123"), "Lead Ops Manager", "ops@controltower.io", "OPERATIONS MANAGER", "ACTIVE", now_str),
-            ("USR-003", "sarah_ops", hash_password("sarah123"), "Sarah Jenkins (Logistics)", "s.jenkins@controltower.io", "OPERATIONS MANAGER", "ACTIVE", now_str),
-            ("USR-004", "alex_admin", hash_password("alex123"), "Alex Rivera (Systems)", "a.rivera@controltower.io", "ADMIN", "ACTIVE", now_str)
+            ("USR-002", "ops_manager", hash_password("manager123"), "Lead Ops Manager", "ops@controltower.io", "OPERATIONS_MANAGER", "ACTIVE", now_str),
+            ("USR-003", "sarah_ops", hash_password("sarah123"), "Sarah Jenkins (Logistics)", "s.jenkins@controltower.io", "OPERATIONS_MANAGER", "ACTIVE", now_str)
         ]
-        cursor.executemany("INSERT INTO users VALUES (?,?,?,?,?,?,?,?)", users)
+        for u in users:
+            cursor.execute("INSERT OR IGNORE INTO users VALUES (?,?,?,?,?,?,?,?)", u)
 
     # 2. Seed Suppliers
     cursor.execute("SELECT COUNT(*) FROM suppliers")
@@ -685,10 +688,20 @@ def safe_delete_user(user_id: str) -> Tuple[bool, str]:
     conn = get_db_connection()
     c = conn.cursor()
 
-    admin_count = c.execute("SELECT COUNT(*) FROM users WHERE role = 'ADMIN'").fetchone()[0]
-    user_row = c.execute("SELECT role FROM users WHERE id = ?", (user_id,)).fetchone()
+    if user_id == "USR-ADMIN" or user_id.lower() == "vidhub657@gmail.com":
+        conn.close()
+        return False, "The primary administrator account (vidhub657@gmail.com) is protected and cannot be deleted."
 
-    if user_row and user_row[0] == "ADMIN" and admin_count <= 1:
+    user_row = c.execute("SELECT role, email FROM users WHERE id = ? OR LOWER(email) = ?", (user_id, user_id.lower())).fetchone()
+    if user_row:
+        email = user_row["email"].lower()
+        if email == "vidhub657@gmail.com":
+            conn.close()
+            return False, "The primary administrator account (vidhub657@gmail.com) is protected and cannot be deleted."
+
+    admin_count = c.execute("SELECT COUNT(*) FROM users WHERE role = 'ADMIN'").fetchone()[0]
+
+    if user_row and user_row["role"] == "ADMIN" and admin_count <= 1:
         conn.close()
         return False, "Cannot delete the sole remaining ADMIN user in the system."
 
@@ -696,3 +709,17 @@ def safe_delete_user(user_id: str) -> Tuple[bool, str]:
     conn.commit()
     conn.close()
     return True, f"User {user_id} deleted successfully."
+
+def toggle_user_status(user_id: str, new_status: str) -> Tuple[bool, str]:
+    conn = get_db_connection()
+    c = conn.cursor()
+
+    user_row = c.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
+    if user_row and user_row["email"].lower() == "vidhub657@gmail.com":
+        conn.close()
+        return False, "The primary administrator account cannot be deactivated."
+
+    c.execute("UPDATE users SET status = ? WHERE id = ?", (new_status, user_id))
+    conn.commit()
+    conn.close()
+    return True, f"User {user_id} status updated to {new_status}."
