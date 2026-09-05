@@ -107,6 +107,29 @@ RETRIEVED CANDIDATE INDEX:
 
     if llm_output and "match_found" in llm_output:
         llm_output["retrieval_meta"] = retrieval_res
+        c_matches = llm_output.get("candidate_matches", [])
+        if not llm_output.get("match_found") or not c_matches:
+            llm_output["match_state"] = "UNMAPPED"
+            llm_output["match_found"] = False
+        else:
+            # Check for ambiguity: 2+ candidates of the SAME entity_type with confidence within 0.10 of top confidence
+            c_matches_sorted = sorted(c_matches, key=lambda x: x.get("confidence", 0), reverse=True)
+            top_conf = c_matches_sorted[0].get("confidence", 0)
+            
+            by_type: Dict[str, List[Dict[str, Any]]] = {}
+            for cm in c_matches_sorted:
+                if top_conf - cm.get("confidence", 0) <= 0.10:
+                    etype = cm.get("entity_type", "unknown")
+                    by_type.setdefault(etype, []).append(cm)
+            
+            is_ambiguous = any(len(items) >= 2 for items in by_type.values())
+            
+            if is_ambiguous:
+                llm_output["match_state"] = "AMBIGUOUS"
+                llm_output["match_found"] = False
+            else:
+                llm_output["match_state"] = "EXACT"
+                llm_output["match_found"] = True
         return llm_output
 
     # -------------------------------------------------------------
@@ -115,8 +138,19 @@ RETRIEVED CANDIDATE INDEX:
     matched_candidates = []
     top_score = candidates[0]["similarity"]
     
+    # Identify primary supplier if any candidate is a supplier
+    primary_supplier_id = None
     for c in candidates:
-        if c["similarity"] >= max(0.30, top_score - 0.15):
+        if c["entity_type"] == "supplier" and c["similarity"] >= similarity_threshold:
+            primary_supplier_id = c["entity_id"]
+            break
+
+    for c in candidates:
+        if c["similarity"] >= max(0.25, top_score - 0.15):
+            # Exclude shipment/sku if it explicitly belongs to a different supplier
+            c_sup = c.get("metadata", {}).get("supplier_id")
+            if primary_supplier_id and c_sup and c_sup != primary_supplier_id:
+                continue
             matched_candidates.append({
                 "entity_type": c["entity_type"],
                 "entity_id": c["entity_id"],
@@ -124,9 +158,23 @@ RETRIEVED CANDIDATE INDEX:
                 "reason": f"Matched via local vector retrieval ({c['method']} similarity: {c['similarity']:.2f})."
             })
 
-    ambiguity = ""
-    if len(matched_candidates) > 1:
-        ambiguity = f"Multiple candidates ({', '.join([m['entity_id'] for m in matched_candidates])}) returned close similarity scores."
+    # Group candidates within 0.10 of top_score by entity_type
+    by_type_close: Dict[str, List[Dict[str, Any]]] = {}
+    for c in candidates:
+        if top_score - c["similarity"] <= 0.10 and c["similarity"] >= similarity_threshold:
+            by_type_close.setdefault(c["entity_type"], []).append(c)
+
+    is_ambiguous_fallback = any(len(items) >= 2 for items in by_type_close.values())
+
+    if is_ambiguous_fallback:
+        match_state = "AMBIGUOUS"
+        ambiguity = f"Multiple competing candidates of the same entity type within 0.10 of top score."
+    elif len(matched_candidates) >= 1 and top_score >= similarity_threshold:
+        match_state = "EXACT"
+        ambiguity = ""
+    else:
+        match_state = "UNMAPPED"
+        ambiguity = ""
 
     return {
         "notice_summary": f"Disruption notice analyzed via vector index match: {candidates[0]['name']}.",
@@ -135,7 +183,8 @@ RETRIEVED CANDIDATE INDEX:
             "disruption_type": "production_halt" if "fire" in notice_text.lower() or "halt" in notice_text.lower() else "shipping_delay",
             "stated_or_implied_duration": "14 days"
         },
-        "match_found": len(matched_candidates) > 0,
+        "match_state": match_state,
+        "match_found": match_state == "EXACT",
         "candidate_matches": matched_candidates,
         "ambiguity_notes": ambiguity,
         "retrieval_meta": retrieval_res,

@@ -111,5 +111,38 @@ class TestPipelineIntegration(unittest.TestCase):
         self.assertEqual(history[-1]["order_id"], "ORD-5001")
         self.assertEqual(history[-1]["status"], "APPROVED")
 
+    def test_three_state_entity_matching_and_clarify(self):
+        ambiguous_stage1 = {
+            "notice_summary": "Ambiguous notice matching multiple suppliers.",
+            "extracted_signals": {"mentioned_entities": ["Nova Sensors", "Nova Components"], "disruption_type": "shipping_delay", "stated_or_implied_duration": None},
+            "match_state": "AMBIGUOUS",
+            "match_found": False,
+            "candidate_matches": [
+                {"entity_type": "supplier", "entity_id": "SUP-105", "confidence": 0.85, "reason": "Match candidate 1"},
+                {"entity_type": "supplier", "entity_id": "SUP-106", "confidence": 0.82, "reason": "Match candidate 2"}
+            ],
+            "ambiguity_notes": "Multiple candidates returned close confidence scores."
+        }
+        with patch("app.resolve_entities", return_value=ambiguous_stage1):
+            res = client.post("/api/analyze", json={"notice_text": "Ambiguous notice text"})
+            self.assertEqual(res.status_code, 200)
+            data = res.json()
+            self.assertEqual(data["match_state"], "AMBIGUOUS")
+            self.assertFalse(data["match_found"])
+            self.assertTrue(data["short_circuited"])
+
+        # Test disruption clarify endpoint
+        clarify_payload = {
+            "notice_text": "Ambiguous notice text",
+            "entity_id": "SUP-105"
+        }
+        clarify_res = client.post("/api/disruption/clarify", json=clarify_payload)
+        self.assertEqual(clarify_res.status_code, 200)
+        c_data = clarify_res.json()
+        self.assertEqual(c_data["match_state"], "EXACT")
+        self.assertTrue(c_data["match_found"])
+        self.assertFalse(c_data["short_circuited"])
+        self.assertIn("stage3", c_data)
+
 if __name__ == "__main__":
     unittest.main()

@@ -102,9 +102,10 @@ def analyze_disruption(req: AnalyzeRequest):
     # Stage 1: LLM Entity Resolution & Vector Retrieval
     # -------------------------------------------------------------
     stage1 = resolve_entities(notice_text.strip(), similarity_threshold=0.25)
+    match_state = stage1.get("match_state", "EXACT" if stage1.get("match_found") else "UNMAPPED")
 
-    # EXPLICIT SHORT-CIRCUIT BRANCH: If no entity match found in Stage 1
-    if not stage1.get("match_found", False):
+    # EXPLICIT SHORT-CIRCUIT BRANCH: If UNMAPPED in Stage 1
+    if match_state == "UNMAPPED":
         return {
             "notice_text": notice_text,
             "stage1": stage1,
@@ -114,9 +115,29 @@ def analyze_disruption(req: AnalyzeRequest):
                 "headline": "No matching supplier, shipment, or stock record found for this notice.",
                 "affected_orders": [],
                 "no_impact": True,
-                "reason": "Stage 1 entity resolution returned match_found: false (similarity below threshold)."
+                "reason": "Stage 1 entity resolution returned match_state: UNMAPPED (similarity below threshold)."
             },
             "match_found": False,
+            "match_state": "UNMAPPED",
+            "short_circuited": True
+        }
+
+    # EXPLICIT SHORT-CIRCUIT BRANCH: If AMBIGUOUS in Stage 1 (Requires human clarification)
+    if match_state == "AMBIGUOUS":
+        return {
+            "notice_text": notice_text,
+            "stage1": stage1,
+            "stage2": None,
+            "stage3": None,
+            "stage4": {
+                "headline": "AMBIGUOUS ENTITY MATCH DETECTED",
+                "affected_orders": [],
+                "no_impact": False,
+                "reason": "Multiple candidate entities matched this notice within a close confidence band. Human clarification required."
+            },
+            "candidate_matches": stage1.get("candidate_matches", []),
+            "match_found": False,
+            "match_state": "AMBIGUOUS",
             "short_circuited": True
         }
 
@@ -164,6 +185,95 @@ def analyze_disruption(req: AnalyzeRequest):
         "stage3": stage3_impact,
         "stage4": stage4,
         "match_found": True,
+        "short_circuited": False
+    }
+
+class ClarifyRequest(BaseModel):
+    notice_text: Optional[str] = None
+    notice_id: Optional[str] = None
+    entity_id: str
+
+@app.post("/api/disruption/clarify")
+def clarify_disruption(req: ClarifyRequest):
+    notice_text = req.notice_text
+    if not notice_text and req.notice_id:
+        notices = load_data_file("notices.json")
+        match_n = next((n for n in notices if n["id"] == req.notice_id), None)
+        if match_n:
+            notice_text = match_n["text"]
+
+    if not notice_text or not notice_text.strip():
+        raise HTTPException(status_code=400, detail="Notice text or valid notice_id is required.")
+
+    suppliers = load_data_file("suppliers.json")
+    stock = load_data_file("stock.json")
+    shipments = load_data_file("shipments.json")
+    orders = load_data_file("orders.json")
+    customers = load_data_file("customers.json")
+
+    entity_type = "supplier"
+    name = req.entity_id
+    if req.entity_id.startswith("SUP") or any(s["id"] == req.entity_id for s in suppliers):
+        entity_type = "supplier"
+        item = next((s for s in suppliers if s["id"] == req.entity_id), None)
+        if item: name = item["name"]
+    elif req.entity_id.startswith("SHP") or any(s["id"] == req.entity_id for s in shipments):
+        entity_type = "shipment"
+        item = next((s for s in shipments if s["id"] == req.entity_id), None)
+        if item: name = f"Shipment {item['id']}"
+    elif req.entity_id.startswith("SKU") or any(s["id"] == req.entity_id for s in stock):
+        entity_type = "stock_item"
+        item = next((s for s in stock if s["id"] == req.entity_id), None)
+        if item: name = item["name"]
+
+    stage1 = {
+        "notice_summary": f"Human operator clarified disruption entity to {name} ({req.entity_id}).",
+        "extracted_signals": {
+            "mentioned_entities": [name],
+            "disruption_type": "production_halt",
+            "stated_or_implied_duration": "14 days"
+        },
+        "match_state": "EXACT",
+        "match_found": True,
+        "candidate_matches": [
+            {
+                "entity_type": entity_type,
+                "entity_id": req.entity_id,
+                "confidence": 1.0,
+                "reason": "Human operator clarified entity selection."
+            }
+        ],
+        "ambiguity_notes": "Clarified via operator selection."
+    }
+
+    raw_impact = traverse_impact(
+        candidate_matches=stage1["candidate_matches"],
+        suppliers=suppliers,
+        stock=stock,
+        shipments=shipments,
+        orders=orders,
+        customers=customers
+    )
+
+    ranked_orders = rank_affected_orders(raw_impact.get("affected_orders", []))
+    raw_impact["affected_orders"] = ranked_orders
+    stage3_impact = process_impact_options(raw_impact, stock)
+    stage4 = narrate_plan(stage3_impact)
+
+    return {
+        "notice_text": notice_text,
+        "stage1": stage1,
+        "stage2": {
+            "matched_entity_ids": raw_impact.get("matched_entity_ids"),
+            "affected_shipments": raw_impact.get("affected_shipments"),
+            "affected_skus": raw_impact.get("affected_skus"),
+            "total_orders_affected": raw_impact.get("total_orders_affected"),
+            "total_at_risk_value": raw_impact.get("total_at_risk_value")
+        },
+        "stage3": stage3_impact,
+        "stage4": stage4,
+        "match_found": True,
+        "match_state": "EXACT",
         "short_circuited": False
     }
 
