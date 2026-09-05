@@ -144,5 +144,18 @@ class TestPipelineIntegration(unittest.TestCase):
         self.assertFalse(c_data["short_circuited"])
         self.assertIn("stage3", c_data)
 
+    def test_action_escalate(self):
+        escalate_payload = {
+            "order_id": "ORD-5002",
+            "action": "escalate",
+            "recommendation_reason": "Ambiguous supplier match / critical contradiction requiring escalation.",
+            "operator_notes": "Escalating to Supply Chain Manager."
+        }
+        res = client.post("/api/action/escalate", json=escalate_payload)
+        self.assertEqual(res.status_code, 200)
+        data = res.json()
+        self.assertEqual(data["status"], "success")
+        self.assertEqual(data["entry"]["status"], "ESCALATED")
+
 if __name__ == "__main__":
     unittest.main()

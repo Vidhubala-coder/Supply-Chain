@@ -365,6 +365,32 @@ def reject_action(req: ActionRequest):
         "operator_notes": req.operator_notes or "Action rejected by human operator."
     }
     audit_log.append(entry)
+    log_timeline_event(
+        stage="Rejected",
+        details=f"Order {req.order_id} action rejected by operator.",
+        order_id=req.order_id,
+        status="REJECTED"
+    )
+    return {"status": "success", "entry": entry}
+
+@app.post("/api/action/escalate")
+def escalate_action(req: ActionRequest):
+    entry = {
+        "id": f"ACT-{len(audit_log)+1:04d}",
+        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "order_id": req.order_id,
+        "status": "ESCALATED",
+        "chosen_action": req.action or "escalate_to_human",
+        "recommendation_reason": req.recommendation_reason or "Escalated for human compliance/operator review.",
+        "operator_notes": req.operator_notes or "Incident escalated by operator."
+    }
+    audit_log.append(entry)
+    log_timeline_event(
+        stage="Escalated",
+        details=f"Incident for {req.order_id} escalated to management.",
+        order_id=req.order_id,
+        status="ESCALATED"
+    )
     return {"status": "success", "entry": entry}
 
 @app.get("/api/action/history")
