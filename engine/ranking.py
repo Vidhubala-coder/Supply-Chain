@@ -43,13 +43,41 @@ def rank_affected_orders(affected_orders: list) -> list:
     Ranks affected orders in descending order of urgency score.
     """
     for ord_impact in affected_orders:
+        c_tier = ord_impact.get("customer_tier", "Standard")
+        o_val = ord_impact.get("order_value", 0.0)
+        d_late = ord_impact.get("days_late", 0)
+        s_qty = ord_impact.get("shortfall_qty", 0)
+        o_qty = ord_impact.get("order_qty", 1)
+
         score = compute_urgency_score(
-            customer_tier=ord_impact.get("customer_tier", "Standard"),
-            order_value=ord_impact.get("order_value", 0.0),
-            days_late=ord_impact.get("days_late", 0),
-            shortfall_qty=ord_impact.get("shortfall_qty", 0),
-            order_qty=ord_impact.get("order_qty", 1)
+            customer_tier=c_tier,
+            order_value=o_val,
+            days_late=d_late,
+            shortfall_qty=s_qty,
+            order_qty=o_qty
         )
         ord_impact["urgency_score"] = score
+        
+        tier_weight = 2.0 if str(c_tier).upper() == "VIP" else 1.0
+        val_factor = min(40.0, (o_val / 500.0))
+        shortfall_ratio = s_qty / max(1, o_qty)
+        delay_factor = min(30.0, (d_late / 7.0) * 15.0)
+
+        ev_dict = ord_impact.setdefault("evidence", {})
+        ev_dict["urgency_score"] = {
+            "source_table": "orders / ranking",
+            "record_ids": [ord_impact.get("order_id"), ord_impact.get("customer_id")],
+            "raw_values": {
+                "customer_tier": c_tier,
+                "tier_weight": tier_weight,
+                "order_value": o_val,
+                "value_factor": round(val_factor, 2),
+                "days_late": d_late,
+                "delay_factor": round(delay_factor, 2),
+                "shortfall_ratio": round(shortfall_ratio, 2)
+            },
+            "formula_string": "min(100.0, (value_factor + delay_factor + (shortfall_ratio * 20.0)) * (tier_weight / 1.5))",
+            "calculated_result": score
+        }
 
     return sorted(affected_orders, key=lambda o: o["urgency_score"], reverse=True)

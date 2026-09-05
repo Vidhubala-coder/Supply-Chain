@@ -145,7 +145,31 @@ def traverse_impact(
             "days_late": days_late,
             "order_value": ord_item.get("order_value", 0.0),
             "source_shipment_id": source_shipment_by_sku.get(sku),
-            "source_supplier_id": source_supplier_by_sku.get(sku)
+            "source_supplier_id": source_supplier_by_sku.get(sku),
+            "evidence": {
+                "shortfall_qty": {
+                    "source_table": "orders",
+                    "record_ids": [ord_item["order_id"], sku],
+                    "raw_values": {
+                        "order_qty": order_qty,
+                        "committed_stock": committed_stock,
+                        "available_unreserved_on_hand": current_available
+                    },
+                    "formula_string": "shortfall_qty = max(0, order_qty - committed_stock)",
+                    "calculated_result": shortfall_qty
+                },
+                "stock_coverage": {
+                    "source_table": "stock",
+                    "record_ids": [sku],
+                    "raw_values": {
+                        "committed_stock": committed_stock,
+                        "order_qty": order_qty,
+                        "coverage_pct": round((committed_stock / max(1, order_qty)) * 100, 1)
+                    },
+                    "formula_string": "committed_stock = min(on_hand_unreserved, order_qty)",
+                    "calculated_result": committed_stock
+                }
+            }
         }
 
         # Order is affected if there is a shortfall OR delay

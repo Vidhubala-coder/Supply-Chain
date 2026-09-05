@@ -89,6 +89,16 @@ STAGE 2-3 DETERMINISTIC IMPACT ASSESSMENT INPUT:
     )
 
     if llm_output and "headline" in llm_output and "affected_orders" in llm_output:
+        # Attach evidence and options from Stage 3 input so deterministic evidence is never dropped
+        impact_by_ord = {o["order_id"]: o for o in affected_orders}
+        for n_ord in llm_output.get("affected_orders", []):
+            oid = n_ord.get("order_id")
+            if oid in impact_by_ord:
+                orig = impact_by_ord[oid]
+                n_ord.setdefault("evidence", orig.get("evidence", {}))
+                n_ord.setdefault("options", orig.get("options", []))
+                n_ord.setdefault("recommended_option", orig.get("recommended_option"))
+                n_ord.setdefault("recommendation_reason", orig.get("recommendation_reason"))
         return llm_output
 
     # -------------------------------------------------------------
@@ -112,7 +122,8 @@ STAGE 2-3 DETERMINISTIC IMPACT ASSESSMENT INPUT:
             "days_late_estimate": ord_item["days_late"],
             "options": ord_item.get("options", []),
             "recommended_option": ord_item.get("recommended_option", "notify_customer"),
-            "recommendation_reason": ord_item.get("recommendation_reason", "Deterministic recommendation based on customer tier and stock math.")
+            "recommendation_reason": ord_item.get("recommendation_reason", "Deterministic recommendation based on customer tier and stock math."),
+            "evidence": ord_item.get("evidence", {})
         })
 
     return {
