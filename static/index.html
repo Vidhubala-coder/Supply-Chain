@@ -24,13 +24,10 @@
       </div>
 
       <div class="quick-demo-roles">
-        <span class="demo-label">Quick Sign-In Demo Accounts:</span>
+        <span class="demo-label">Quick Sign-In Demo Account:</span>
         <div class="demo-buttons-row">
-          <button class="btn btn-secondary btn-sm" id="btn-quick-admin">
-            <span class="role-badge role-admin">ADMIN</span> Login as Admin (vidhub657@gmail.com)
-          </button>
           <button class="btn btn-secondary btn-sm" id="btn-quick-manager">
-            <span class="role-badge role-manager">OPS MANAGER</span> Login as Ops Manager
+            <span class="role-badge role-manager">OPS MANAGER</span> Quick Login as Operations Manager (ops@controltower.io)
           </button>
         </div>
       </div>
@@ -188,10 +185,6 @@
           <span>Escalations</span>
           <span class="badge badge-escalations" id="sidebar-escalations-badge">0</span>
         </button>
-        <button class="nav-item admin-only-nav" data-view="admin" id="nav-admin-btn">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10H12V2z"/><path d="M12 2a10 10 0 0 1 10 10h-10V2z"/></svg>
-          <span>Admin Management</span>
-        </button>
       </nav>
 
       <div class="sidebar-footer">
@@ -202,8 +195,8 @@
 
         <div class="logged-user-box" id="logged-user-box">
           <div class="user-info">
-            <span class="user-name" id="user-display-name">Executive Admin</span>
-            <span class="role-badge" id="user-role-badge">ADMIN</span>
+            <span class="user-name" id="user-display-name">Operations Manager</span>
+            <span class="role-badge role-manager" id="user-role-badge">MANAGER</span>
           </div>
           <button class="btn-logout" id="btn-logout" title="Logout">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
@@ -760,28 +753,103 @@
           </div>
         </div>
       </section>
+    </div>
+  </div>
 
-      <!-- View 17: Admin Management -->
-      <section class="view-pane" id="view-admin" style="display: none;">
-        <div class="module-header">
-          <div>
-            <h2>Admin User Management & Role Control</h2>
-            <p class="text-muted">Manage system operator accounts, assign ADMIN or OPERATIONS MANAGER roles safely.</p>
+  <!-- Add Product Modal -->
+  <div class="modal-overlay" id="modal-add-product-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>+ Add New Product</h3>
+        <button class="btn-close-modal" onclick="closeModal('modal-add-product-overlay')">&times;</button>
+      </div>
+      <form id="form-add-product">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Product Name *</label>
+            <input type="text" id="add-p-name" class="form-input" placeholder="e.g. Microcontroller Unit PMIC-8" required>
           </div>
-          <button class="btn btn-primary" id="btn-add-user">+ Add User Account</button>
-        </div>
-        <div class="dash-panel">
-          <div class="table-responsive">
-            <table class="data-table">
-              <thead>
-                <tr><th>User ID</th><th>Username</th><th>Full Name</th><th>Email</th><th>Role</th><th>Status</th><th>Actions</th></tr>
-              </thead>
-              <tbody id="admin-users-tbody"></tbody>
-            </table>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">SKU *</label>
+              <input type="text" id="add-p-sku" class="form-input" placeholder="SKU-1008" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <input type="text" id="add-p-category" class="form-input" placeholder="Semiconductors" required>
+            </div>
           </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Supplier *</label>
+              <select id="add-p-supplier" class="form-select" required>
+                <option value="">Select Supplier...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Unit Cost ($) *</label>
+              <input type="number" step="0.01" id="add-p-cost" class="form-input" placeholder="45.50" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reorder Level</label>
+            <input type="number" id="add-p-reorder" class="form-input" value="50">
+          </div>
+          <div class="login-error-msg" id="add-p-error" style="display:none;"></div>
         </div>
-      </section>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-add-product-overlay')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Product</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
+  <!-- Edit Product Modal -->
+  <div class="modal-overlay" id="modal-edit-product-overlay" style="display:none;">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>Edit Product Specification</h3>
+        <button class="btn-close-modal" onclick="closeModal('modal-edit-product-overlay')">&times;</button>
+      </div>
+      <form id="form-edit-product">
+        <input type="hidden" id="edit-p-id">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label">Product Name *</label>
+            <input type="text" id="edit-p-name" class="form-input" required>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">SKU *</label>
+              <input type="text" id="edit-p-sku" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Category *</label>
+              <input type="text" id="edit-p-category" class="form-input" required>
+            </div>
+          </div>
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label">Supplier *</label>
+              <select id="edit-p-supplier" class="form-select" required></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Unit Cost ($) *</label>
+              <input type="number" step="0.01" id="edit-p-cost" class="form-input" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Reorder Level</label>
+            <input type="number" id="edit-p-reorder" class="form-input">
+          </div>
+          <div class="login-error-msg" id="edit-p-error" style="display:none;"></div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('modal-edit-product-overlay')">Cancel</button>
+          <button type="submit" class="btn btn-primary">Update Product</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -802,18 +870,18 @@
   <div class="modal-overlay" id="delete-modal-overlay" style="display:none;">
     <div class="modal-card modal-sm">
       <div class="modal-header">
-        <h3>Confirm Safe Deletion</h3>
+        <h3>Confirm Deletion / Deactivation</h3>
         <button class="btn-close-modal" onclick="closeModal('delete-modal-overlay')">&times;</button>
       </div>
       <div class="modal-body">
         <p id="delete-confirm-text">Are you sure you want to delete this record?</p>
         <div class="delete-warning-box" id="delete-warning-box">
-          <strong>Relational Integrity Guard:</strong> Deletion will be blocked if active relationships exist.
+          <strong>Relational Integrity Guard:</strong> If active references exist, status will be set to INACTIVE safely.
         </div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('delete-modal-overlay')">Cancel</button>
-        <button class="btn btn-danger" id="btn-confirm-delete-action">Delete Record</button>
+        <button class="btn btn-danger" id="btn-confirm-delete-action">Confirm</button>
       </div>
     </div>
   </div>

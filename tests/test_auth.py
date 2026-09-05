@@ -1,29 +1,28 @@
 """
 tests/test_auth.py
-Unit test suite verifying exact authentication requirements:
-User registration flow, reserved admin email (vidhub657@gmail.com),
-environment variable ADMIN_PASSWORD validation, RBAC backend protection,
-logout, and admin account safety safeguards.
+Unit test suite verifying Manager authentication architecture:
+Manager registration flow, duplicate email validation, invalid email handling,
+password mismatch, password strength validation, manager login, invalid credentials handling,
+session logout, and protected route access.
 """
 
-import os
 import unittest
 from fastapi.testclient import TestClient
 from app import app
 from backend.database import get_db_connection
 
-class TestAuthenticationSuite(unittest.TestCase):
+class TestManagerAuthenticationSuite(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
-        # Clean up test accounts to ensure idempotency
+        # Clean up test accounts to ensure test idempotency
         conn = get_db_connection()
-        conn.execute("DELETE FROM users WHERE email IN ('jane.dev@example.com', 'bob.analyst@example.com', 'sarah.connor@example.com')")
+        conn.execute("DELETE FROM users WHERE email IN ('jane.dev@example.com', 'bob.analyst@example.com', 'sarah.connor@example.com', 'dup.test@example.com')")
         conn.commit()
         conn.close()
 
-    def test_01_user_registration_works(self):
+    def test_01_manager_registration_works(self):
         payload = {
-            "name": "Jane Developer",
+            "name": "Jane Manager",
             "email": "jane.dev@example.com",
             "password": "securepassword123",
             "confirm_password": "securepassword123",
@@ -33,7 +32,7 @@ class TestAuthenticationSuite(unittest.TestCase):
         self.assertEqual(res.status_code, 200)
         self.assertEqual(res.json()["status"], "success")
 
-    def test_02_new_registered_user_can_login(self):
+    def test_02_new_registered_manager_can_login(self):
         # Register user
         reg_payload = {
             "name": "Bob Analyst",
@@ -51,17 +50,72 @@ class TestAuthenticationSuite(unittest.TestCase):
         self.assertEqual(login_res.status_code, 200)
         data = login_res.json()
         self.assertEqual(data["status"], "success")
-        self.assertEqual(data["session"]["role"], "OPERATIONS_MANAGER")
+        self.assertEqual(data["session"]["role"], "MANAGER")
 
-    def test_03_wrong_password_fails(self):
+    def test_03_duplicate_registration_fails(self):
+        reg_payload = {
+            "name": "Dup Test",
+            "email": "dup.test@example.com",
+            "password": "password123",
+            "confirm_password": "password123"
+        }
+        self.client.post("/api/auth/register", json=reg_payload)
+        res = self.client.post("/api/auth/register", json=reg_payload)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("already exists", res.json()["detail"])
+
+    def test_04_invalid_email_format_fails(self):
+        payload = {
+            "name": "Invalid Email",
+            "email": "invalid-email-format",
+            "password": "password123",
+            "confirm_password": "password123"
+        }
+        res = self.client.post("/api/auth/register", json=payload)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("valid email address", res.json()["detail"])
+
+    def test_05_password_mismatch_fails(self):
+        payload = {
+            "name": "Mismatch Password",
+            "email": "mismatch@example.com",
+            "password": "password123",
+            "confirm_password": "password456"
+        }
+        res = self.client.post("/api/auth/register", json=payload)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("do not match", res.json()["detail"])
+
+    def test_06_weak_password_fails(self):
+        payload = {
+            "name": "Weak Password",
+            "email": "weak@example.com",
+            "password": "123",
+            "confirm_password": "123"
+        }
+        res = self.client.post("/api/auth/register", json=payload)
+        self.assertEqual(res.status_code, 400)
+        self.assertIn("security criteria", res.json()["detail"])
+
+    def test_07_missing_required_fields_fails(self):
+        payload = {
+            "name": "",
+            "email": "missing@example.com",
+            "password": "password123",
+            "confirm_password": "password123"
+        }
+        res = self.client.post("/api/auth/register", json=payload)
+        self.assertEqual(res.status_code, 400)
+
+    def test_08_wrong_password_fails(self):
         res = self.client.post("/api/auth/login", json={
-            "email": "bob.analyst@example.com",
+            "email": "ops@controltower.io",
             "password": "wrongpassword"
         })
         self.assertEqual(res.status_code, 401)
         self.assertEqual(res.json()["detail"], "Invalid email or password.")
 
-    def test_04_wrong_email_fails(self):
+    def test_09_wrong_email_fails(self):
         res = self.client.post("/api/auth/login", json={
             "email": "nonexistent.user@example.com",
             "password": "anyPassword123"
@@ -69,128 +123,27 @@ class TestAuthenticationSuite(unittest.TestCase):
         self.assertEqual(res.status_code, 401)
         self.assertEqual(res.json()["detail"], "Invalid email or password.")
 
-    def test_05_admin_email_cannot_be_registered_normally(self):
-        payload = {
-            "name": "Fake Admin Attempt",
-            "email": "vidhub657@gmail.com",
-            "password": "password123",
-            "confirm_password": "password123"
-        }
-        res = self.client.post("/api/auth/register", json=payload)
-        self.assertEqual(res.status_code, 400)
-        self.assertIn("reserved for the administrator", res.json()["detail"])
-
-        # Test case-insensitive admin email registration attempt
-        upper_payload = {
-            "name": "Fake Admin Uppercase",
-            "email": "VIDHUB657@GMAIL.COM",
-            "password": "password123",
-            "confirm_password": "password123"
-        }
-        upper_res = self.client.post("/api/auth/register", json=upper_payload)
-        self.assertEqual(upper_res.status_code, 400)
-        self.assertIn("reserved for the administrator", upper_res.json()["detail"])
-
-    def test_06_correct_admin_email_and_env_password_grants_admin(self):
-        admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
-        res = self.client.post("/api/auth/login", json={
-            "email": "vidhub657@gmail.com",
-            "password": admin_pass
-        })
-        self.assertEqual(res.status_code, 200)
-        data = res.json()
-        self.assertEqual(data["session"]["role"], "ADMIN")
-        self.assertEqual(data["session"]["email"].lower(), "vidhub657@gmail.com")
-
-    def test_07_correct_admin_email_wrong_password_rejected(self):
-        res = self.client.post("/api/auth/login", json={
-            "email": "vidhub657@gmail.com",
-            "password": "definitely_wrong_admin_pass"
-        })
-        self.assertEqual(res.status_code, 401)
-        self.assertEqual(res.json()["detail"], "Invalid email or password.")
-
-    def test_08_normal_user_cannot_access_admin_routes(self):
-        # Register normal user first
-        self.client.post("/api/auth/register", json={
-            "name": "Bob Analyst",
-            "email": "bob.analyst@example.com",
-            "password": "password123",
-            "confirm_password": "password123"
-        })
-        # Login as normal user
+    def test_10_logout_and_protected_route_validation(self):
+        # Login seeded manager
         login_res = self.client.post("/api/auth/login", json={
-            "email": "bob.analyst@example.com",
-            "password": "password123"
-        })
-        token = login_res.json()["session"]["session_token"]
-
-        headers = {"Authorization": f"Bearer {token}"}
-        admin_res = self.client.get("/api/admin/users", headers=headers)
-        self.assertEqual(admin_res.status_code, 403)
-
-    def test_09_normal_user_default_role_is_operations_manager(self):
-        reg_payload = {
-            "name": "Sarah Connor",
-            "email": "sarah.connor@example.com",
-            "password": "password123",
-            "confirm_password": "password123"
-        }
-        self.client.post("/api/auth/register", json=reg_payload)
-
-        login_res = self.client.post("/api/auth/login", json={
-            "email": "sarah.connor@example.com",
-            "password": "password123"
-        })
-        self.assertEqual(login_res.json()["session"]["role"], "OPERATIONS_MANAGER")
-
-    def test_10_admin_can_access_user_management(self):
-        admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
-        login_res = self.client.post("/api/auth/login", json={
-            "email": "vidhub657@gmail.com",
-            "password": admin_pass
-        })
-        token = login_res.json()["session"]["session_token"]
-
-        headers = {"Authorization": f"Bearer {token}"}
-        users_res = self.client.get("/api/admin/users", headers=headers)
-        self.assertEqual(users_res.status_code, 200)
-        self.assertTrue(len(users_res.json()["users"]) >= 1)
-
-    def test_11_logout_works(self):
-        # Register normal user first
-        self.client.post("/api/auth/register", json={
-            "name": "Bob Analyst",
-            "email": "bob.analyst@example.com",
-            "password": "password123",
-            "confirm_password": "password123"
-        })
-        login_res = self.client.post("/api/auth/login", json={
-            "email": "bob.analyst@example.com",
-            "password": "password123"
+            "email": "ops@controltower.io",
+            "password": "manager123"
         })
         token = login_res.json()["session"]["session_token"]
         headers = {"Authorization": f"Bearer {token}"}
 
+        # Verify session me
+        me_res = self.client.get("/api/auth/me", headers=headers)
+        self.assertEqual(me_res.status_code, 200)
+        self.assertEqual(me_res.json()["user"]["role"], "MANAGER")
+
+        # Logout
         logout_res = self.client.post("/api/auth/logout", headers=headers)
         self.assertEqual(logout_res.status_code, 200)
 
         # Confirm token is invalidated
-        me_res = self.client.get("/api/auth/me", headers=headers)
-        self.assertEqual(me_res.status_code, 401)
-
-    def test_12_protected_admin_account_cannot_be_deleted(self):
-        admin_pass = os.environ.get("ADMIN_PASSWORD", "admin123")
-        login_res = self.client.post("/api/auth/login", json={
-            "email": "vidhub657@gmail.com",
-            "password": admin_pass
-        })
-        token = login_res.json()["session"]["session_token"]
-        headers = {"Authorization": f"Bearer {token}"}
-
-        del_res = self.client.delete("/api/admin/users/USR-ADMIN", headers=headers)
-        self.assertEqual(del_res.status_code, 400)
-        self.assertIn("protected and cannot be deleted", del_res.json()["detail"])
+        invalid_me = self.client.get("/api/auth/me", headers=headers)
+        self.assertEqual(invalid_me.status_code, 401)
 
 if __name__ == "__main__":
     unittest.main()

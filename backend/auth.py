@@ -1,8 +1,7 @@
 """
 backend/auth.py
-Enterprise Authentication & Role-Based Access Control (RBAC) System.
-Enforces registration flow, reserved admin account (vidhub657@gmail.com),
-environment-driven admin passwords, and session management.
+Manager Authentication & Session Management System.
+All users authenticate as MANAGER against the relational database.
 """
 
 import os
@@ -11,45 +10,17 @@ import uuid
 from typing import Dict, Any, Optional, Tuple
 from datetime import datetime, timedelta
 from fastapi import HTTPException, Header
-from dotenv import load_dotenv
 
 from backend.database import get_db_connection, hash_password, verify_password
 
-load_dotenv()
-
-ADMIN_EMAIL = os.environ.get("ADMIN_EMAIL", "vidhub657@gmail.com").strip().lower()
-
 # In-memory session store mapping session_token -> user dict
 SESSIONS: Dict[str, Dict[str, Any]] = {}
-
-def check_startup_admin_config():
-    """Startup verification of ADMIN_PASSWORD configuration."""
-    admin_pass = os.environ.get("ADMIN_PASSWORD", "").strip()
-    if not admin_pass:
-        print("\n" + "="*80)
-        print("CONFIG WARNING: ADMIN_PASSWORD is not configured. Add it to the .env file before starting the application.")
-        print("="*80 + "\n")
-
-# Run startup check on import
-check_startup_admin_config()
-
-def get_admin_password() -> str:
-    return os.environ.get("ADMIN_PASSWORD", "").strip()
-
-def is_admin_email(email: str) -> bool:
-    if not email:
-        return False
-    return email.strip().lower() == ADMIN_EMAIL
 
 def register_user(name: str, email: str, password: str, confirm_password: str, department: Optional[str] = None, phone: Optional[str] = None) -> Tuple[bool, str]:
     if not name or not email or not password or not confirm_password:
         return False, "Please complete all required fields."
 
     email_clean = email.strip().lower()
-
-    # Rule 2 & 5: Admin email cannot be registered through public registration
-    if is_admin_email(email_clean):
-        return False, "This email is reserved for the administrator."
 
     # Validate email format
     email_regex = r'^[\w\.-]+@[\w\.-]+\.\w+$'
@@ -75,7 +46,7 @@ def register_user(name: str, email: str, password: str, confirm_password: str, d
     user_id = f"USR-{uuid.uuid4().hex[:6].upper()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     pw_hash = hash_password(password)
-    default_role = "OPERATIONS_MANAGER"
+    default_role = "MANAGER"
 
     c.execute("""
         INSERT INTO users (id, username, password_hash, name, email, role, status, created_at)
@@ -91,28 +62,8 @@ def authenticate_user(email_input: str, password_input: str) -> Tuple[Optional[D
         return None, "Invalid email or password."
 
     email_clean = email_input.strip().lower()
-    admin_pass = get_admin_password()
 
-    # Rule 4: Admin Account Authentication against .env ADMIN_PASSWORD
-    if is_admin_email(email_clean):
-        if not admin_pass or password_input != admin_pass:
-            return None, "Invalid email or password."
-
-        # Admin login successful
-        token = str(uuid.uuid4())
-        session_data = {
-            "session_token": token,
-            "user_id": "USR-ADMIN",
-            "username": ADMIN_EMAIL,
-            "name": "Administrator",
-            "email": ADMIN_EMAIL,
-            "role": "ADMIN",
-            "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
-        }
-        SESSIONS[token] = session_data
-        return session_data, "Login successful"
-
-    # Normal User Authentication against SQLite DB
+    # Authenticate Manager against SQLite DB
     conn = get_db_connection()
     c = conn.cursor()
     row = c.execute("""
@@ -137,7 +88,7 @@ def authenticate_user(email_input: str, password_input: str) -> Tuple[Optional[D
             "username": user["username"],
             "name": user["name"],
             "email": user["email"],
-            "role": user.get("role", "OPERATIONS_MANAGER"),
+            "role": "MANAGER",
             "expires_at": (datetime.now() + timedelta(hours=24)).isoformat()
         }
         SESSIONS[token] = session_data

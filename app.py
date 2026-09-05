@@ -21,7 +21,7 @@ from backend.database import (
     safe_delete_customer, safe_delete_user, toggle_user_status
 )
 from backend.auth import (
-    authenticate_user, register_user, get_current_session, invalidate_session, is_admin_email
+    authenticate_user, register_user, get_current_session, invalidate_session
 )
 from backend.notifications import create_notification, get_all_notifications, get_templates
 from backend.reports import generate_report, get_reports_list, generate_pdf_bytes
@@ -195,13 +195,6 @@ class EscalationRequest(BaseModel):
     severity: str
     related_disruption_id: Optional[str] = None
     assigned_to: Optional[str] = "Lead Ops Manager"
-
-# Authorization Helper
-def require_admin(authorization: Optional[str] = Header(None)) -> Dict[str, Any]:
-    session = get_current_session(authorization)
-    if not session or session.get("role") != "ADMIN":
-        raise HTTPException(status_code=403, detail="Access denied. Administrator permissions required.")
-    return session
 
 # ROOT & HEALTH
 @app.get("/")
@@ -597,6 +590,7 @@ def get_products():
     SELECT p.*, s.name as supplier_name 
     FROM products p 
     LEFT JOIN suppliers s ON p.supplier_id = s.id
+    WHERE p.status != 'INACTIVE'
     ORDER BY p.id ASC
     """).fetchall()
     conn.close()
@@ -604,25 +598,42 @@ def get_products():
 
 @app.post("/api/products")
 def create_product(p: ProductModel):
+    if not p.name or not p.sku or not p.category or not p.supplier_id or p.unit_cost is None or p.unit_cost < 0:
+        raise HTTPException(status_code=400, detail="Name, SKU, Category, Supplier, and valid Unit Cost are required.")
+
     conn = get_db_connection()
-    p_id = p.id or f"PRD-{p.sku}"
+    c = conn.cursor()
+
+    existing_sku = c.execute("SELECT id FROM products WHERE sku = ? AND status != 'INACTIVE'", (p.sku.strip(),)).fetchone()
+    if existing_sku:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"A product with SKU '{p.sku}' already exists.")
+
+    p_id = p.id.strip() if p.id else f"PRD-{p.sku.strip()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute("INSERT INTO products VALUES (?,?,?,?,?,?,?,?,?)", (p_id, p.name, p.sku, p.category, p.supplier_id, p.unit_cost, p.reorder_level, p.status, now_str))
+    c.execute(
+        "INSERT INTO products VALUES (?,?,?,?,?,?,?,?,?)",
+        (p_id, p.name.strip(), p.sku.strip(), p.category.strip(), p.supplier_id.strip(), float(p.unit_cost), int(p.reorder_level or 50), p.status or "ACTIVE", now_str)
+    )
     conn.commit()
     conn.close()
-    return {"status": "success", "id": p_id}
+    return {"status": "success", "id": p_id, "message": "Product added successfully."}
 
 @app.put("/api/products/{product_id}")
 def update_product(product_id: str, p: ProductModel):
+    if not p.name or not p.sku or not p.category or not p.supplier_id or p.unit_cost is None or p.unit_cost < 0:
+        raise HTTPException(status_code=400, detail="Name, SKU, Category, Supplier, and valid Unit Cost are required.")
+
     conn = get_db_connection()
-    conn.execute("""
+    c = conn.cursor()
+    c.execute("""
     UPDATE products 
     SET name=?, sku=?, category=?, supplier_id=?, unit_cost=?, reorder_level=?, status=?
     WHERE id=?
-    """, (p.name, p.sku, p.category, p.supplier_id, p.unit_cost, p.reorder_level, p.status, product_id))
+    """, (p.name.strip(), p.sku.strip(), p.category.strip(), p.supplier_id.strip(), float(p.unit_cost), int(p.reorder_level or 50), p.status or "ACTIVE", product_id))
     conn.commit()
     conn.close()
-    return {"status": "success", "id": product_id}
+    return {"status": "success", "id": product_id, "message": "Product updated successfully."}
 
 @app.delete("/api/products/{product_id}")
 def delete_product(product_id: str):
@@ -638,13 +649,29 @@ def get_suppliers():
 
 @app.post("/api/suppliers")
 def create_supplier(s: SupplierModel):
+    if not s.name or not s.contact or not s.email or not s.location:
+        raise HTTPException(status_code=400, detail="Name, Contact, Email, and Location are required.")
     conn = get_db_connection()
     s_id = s.id or f"SUP-{uuid.uuid4().hex[:4].upper()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute("INSERT INTO suppliers VALUES (?,?,?,?,?,?,?,?)", (s_id, s.name, s.contact, s.email, s.location, s.status, s.performance, now_str))
+    conn.execute("INSERT INTO suppliers VALUES (?,?,?,?,?,?,?,?)", (s_id, s.name.strip(), s.contact.strip(), s.email.strip(), s.location.strip(), s.status or "ACTIVE", float(s.performance or 95.0), now_str))
     conn.commit()
     conn.close()
-    return {"status": "success", "id": s_id}
+    return {"status": "success", "id": s_id, "message": "Supplier added successfully."}
+
+@app.put("/api/suppliers/{supplier_id}")
+def update_supplier(supplier_id: str, s: SupplierModel):
+    if not s.name or not s.contact or not s.email or not s.location:
+        raise HTTPException(status_code=400, detail="Name, Contact, Email, and Location are required.")
+    conn = get_db_connection()
+    conn.execute("""
+    UPDATE suppliers 
+    SET name=?, contact=?, email=?, location=?, status=?, performance=?
+    WHERE id=?
+    """, (s.name.strip(), s.contact.strip(), s.email.strip(), s.location.strip(), s.status or "ACTIVE", float(s.performance or 95.0), supplier_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "id": supplier_id, "message": "Supplier updated successfully."}
 
 @app.delete("/api/suppliers/{supplier_id}")
 def delete_supplier(supplier_id: str):
@@ -657,19 +684,35 @@ def delete_supplier(supplier_id: str):
 @app.get("/api/warehouses")
 def get_warehouses():
     conn = get_db_connection()
-    rows = conn.execute("SELECT * FROM warehouses ORDER BY id ASC").fetchall()
+    rows = conn.execute("SELECT * FROM warehouses WHERE status != 'INACTIVE' ORDER BY id ASC").fetchall()
     conn.close()
     return {"warehouses": [dict(r) for r in rows]}
 
 @app.post("/api/warehouses")
 def create_warehouse(w: WarehouseModel):
+    if not w.name or not w.location or w.capacity is None or w.capacity <= 0:
+        raise HTTPException(status_code=400, detail="Name, Location, and valid Capacity are required.")
     conn = get_db_connection()
     w_id = w.id or f"WH-{uuid.uuid4().hex[:4].upper()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute("INSERT INTO warehouses VALUES (?,?,?,?,?,?,?)", (w_id, w.name, w.location, w.capacity, w.current_utilization, w.status, now_str))
+    conn.execute("INSERT INTO warehouses VALUES (?,?,?,?,?,?,?)", (w_id, w.name.strip(), w.location.strip(), int(w.capacity), float(w.current_utilization or 0.0), w.status or "ACTIVE", now_str))
     conn.commit()
     conn.close()
-    return {"status": "success", "id": w_id}
+    return {"status": "success", "id": w_id, "message": "Warehouse added successfully."}
+
+@app.put("/api/warehouses/{warehouse_id}")
+def update_warehouse(warehouse_id: str, w: WarehouseModel):
+    if not w.name or not w.location or w.capacity is None or w.capacity <= 0:
+        raise HTTPException(status_code=400, detail="Name, Location, and valid Capacity are required.")
+    conn = get_db_connection()
+    conn.execute("""
+    UPDATE warehouses 
+    SET name=?, location=?, capacity=?, current_utilization=?, status=?
+    WHERE id=?
+    """, (w.name.strip(), w.location.strip(), int(w.capacity), float(w.current_utilization or 0.0), w.status or "ACTIVE", warehouse_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "id": warehouse_id, "message": "Warehouse updated successfully."}
 
 @app.delete("/api/warehouses/{warehouse_id}")
 def delete_warehouse(warehouse_id: str):
@@ -700,6 +743,8 @@ def get_inventory():
 
 @app.post("/api/inventory")
 def create_inventory(inv: InventoryModel):
+    if not inv.product_id or not inv.warehouse_id or inv.current_stock is None or inv.daily_demand is None:
+        raise HTTPException(status_code=400, detail="Product ID, Warehouse ID, Current Stock, and Daily Demand are required.")
     conn = get_db_connection()
     inv_id = inv.id or f"INV-{uuid.uuid4().hex[:6].upper()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -709,10 +754,37 @@ def create_inventory(inv: InventoryModel):
     elif cov < 7: st = "LOW"
     else: st = "HEALTHY"
 
-    conn.execute("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?)", (inv_id, inv.product_id, inv.warehouse_id, inv.current_stock, inv.daily_demand, inv.safety_stock, st, now_str))
+    conn.execute("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?)", (inv_id, inv.product_id.strip(), inv.warehouse_id.strip(), int(inv.current_stock), int(inv.daily_demand), int(inv.safety_stock or 0), st, now_str))
     conn.commit()
     conn.close()
-    return {"status": "success", "id": inv_id}
+    return {"status": "success", "id": inv_id, "message": "Inventory allocation added successfully."}
+
+@app.put("/api/inventory/{inventory_id}")
+def update_inventory(inventory_id: str, inv: InventoryModel):
+    conn = get_db_connection()
+    cov = inv.current_stock / max(1, inv.daily_demand)
+    if inv.current_stock == 0: st = "OUT OF STOCK"
+    elif cov < 3: st = "CRITICAL"
+    elif cov < 7: st = "LOW"
+    else: st = "HEALTHY"
+
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute("""
+    UPDATE inventory 
+    SET current_stock=?, daily_demand=?, safety_stock=?, status=?, last_updated=?
+    WHERE id=?
+    """, (int(inv.current_stock), int(inv.daily_demand), int(inv.safety_stock or 0), st, now_str, inventory_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "id": inventory_id, "message": "Inventory updated successfully."}
+
+@app.delete("/api/inventory/{inventory_id}")
+def delete_inventory(inventory_id: str):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM inventory WHERE id=?", (inventory_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": "Inventory record deleted successfully."}
 
 # 5. SHIPMENTS
 @app.get("/api/shipments")
@@ -721,16 +793,39 @@ def get_shipments():
 
 @app.post("/api/shipments")
 def create_shipment(s: ShipmentModel):
+    if not s.supplier_id or not s.product_id or not s.destination_warehouse_id or not s.expected_delivery:
+        raise HTTPException(status_code=400, detail="Supplier, Product, Destination Warehouse, and Expected Delivery are required.")
     conn = get_db_connection()
     s_id = s.id or f"SHP{uuid.uuid4().hex[:4].upper()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     conn.execute("""
     INSERT INTO shipments (id, supplier_id, product_id, quantity, origin, destination_warehouse_id, expected_delivery, actual_delivery, status, delay_duration, delay_reason, expected_new_delivery_date, created_at, last_updated)
     VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-    """, (s_id, s.supplier_id, s.product_id, s.quantity, s.origin, s.destination_warehouse_id, s.expected_delivery, s.actual_delivery, s.status, s.delay_duration, s.delay_reason, s.expected_new_delivery_date, now_str, now_str))
+    """, (s_id, s.supplier_id.strip(), s.product_id.strip(), int(s.quantity), s.origin.strip(), s.destination_warehouse_id.strip(), s.expected_delivery.strip(), s.actual_delivery, s.status or "PLANNED", int(s.delay_duration or 0), s.delay_reason, s.expected_new_delivery_date, now_str, now_str))
     conn.commit()
     conn.close()
-    return {"status": "success", "id": s_id}
+    return {"status": "success", "id": s_id, "message": "Shipment created successfully."}
+
+@app.put("/api/shipments/{shipment_id}")
+def update_shipment(shipment_id: str, s: ShipmentModel):
+    conn = get_db_connection()
+    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    conn.execute("""
+    UPDATE shipments
+    SET quantity=?, expected_delivery=?, actual_delivery=?, status=?, delay_duration=?, delay_reason=?, expected_new_delivery_date=?, last_updated=?
+    WHERE id=?
+    """, (int(s.quantity), s.expected_delivery, s.actual_delivery, s.status, int(s.delay_duration or 0), s.delay_reason, s.expected_new_delivery_date, now_str, shipment_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "id": shipment_id, "message": "Shipment updated successfully."}
+
+@app.delete("/api/shipments/{shipment_id}")
+def delete_shipment(shipment_id: str):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM shipments WHERE id=?", (shipment_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": "Shipment deleted successfully."}
 
 # 6. ORDERS
 @app.get("/api/orders")
@@ -739,13 +834,35 @@ def get_orders():
 
 @app.post("/api/orders")
 def create_order(o: OrderModel):
+    if not o.customer_id or not o.product_id or o.quantity is None or o.quantity <= 0:
+        raise HTTPException(status_code=400, detail="Customer, Product, and valid Quantity are required.")
     conn = get_db_connection()
     o_id = o.id or f"ORD{uuid.uuid4().hex[:4].upper()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute("INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?)", (o_id, o.customer_id, o.product_id, o.quantity, o.order_date, o.required_delivery_date, o.status, o.priority, now_str))
+    conn.execute("INSERT INTO orders VALUES (?,?,?,?,?,?,?,?,?)", (o_id, o.customer_id.strip(), o.product_id.strip(), int(o.quantity), o.order_date or now_str[:10], o.required_delivery_date, o.status or "PENDING", o.priority or "NORMAL", now_str))
     conn.commit()
     conn.close()
-    return {"status": "success", "id": o_id}
+    return {"status": "success", "id": o_id, "message": "Order created successfully."}
+
+@app.put("/api/orders/{order_id}")
+def update_order(order_id: str, o: OrderModel):
+    conn = get_db_connection()
+    conn.execute("""
+    UPDATE orders 
+    SET quantity=?, required_delivery_date=?, status=?, priority=?
+    WHERE id=?
+    """, (int(o.quantity), o.required_delivery_date, o.status, o.priority or "NORMAL", order_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "id": order_id, "message": "Order updated successfully."}
+
+@app.delete("/api/orders/{order_id}")
+def delete_order(order_id: str):
+    conn = get_db_connection()
+    conn.execute("DELETE FROM orders WHERE id=?", (order_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": "Order deleted successfully."}
 
 # 7. CUSTOMERS
 @app.get("/api/customers")
@@ -754,62 +871,33 @@ def get_customers():
 
 @app.post("/api/customers")
 def create_customer(c: CustomerModel):
+    if not c.name or not c.company or not c.email:
+        raise HTTPException(status_code=400, detail="Name, Company, and Email are required.")
     conn = get_db_connection()
     c_id = c.id or f"CUST-{uuid.uuid4().hex[:4].upper()}"
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    conn.execute("INSERT INTO customers VALUES (?,?,?,?,?,?)", (c_id, c.name, c.company, c.email, c.priority, now_str))
+    conn.execute("INSERT INTO customers VALUES (?,?,?,?,?,?,?)", (c_id, c.name.strip(), c.company.strip(), c.email.strip(), c.priority or "NORMAL", "ACTIVE", now_str))
     conn.commit()
     conn.close()
-    return {"status": "success", "id": c_id}
+    return {"status": "success", "id": c_id, "message": "Customer added successfully."}
+
+@app.put("/api/customers/{customer_id}")
+def update_customer(customer_id: str, c: CustomerModel):
+    if not c.name or not c.company or not c.email:
+        raise HTTPException(status_code=400, detail="Name, Company, and Email are required.")
+    conn = get_db_connection()
+    conn.execute("""
+    UPDATE customers
+    SET name=?, company=?, email=?, priority=?
+    WHERE id=?
+    """, (c.name.strip(), c.company.strip(), c.email.strip(), c.priority or "NORMAL", customer_id))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "id": customer_id, "message": "Customer updated successfully."}
 
 @app.delete("/api/customers/{customer_id}")
 def delete_customer(customer_id: str):
     success, msg = safe_delete_customer(customer_id)
-    if not success:
-        raise HTTPException(status_code=400, detail=msg)
-    return {"status": "success", "message": msg}
-
-# 8. ADMIN USER MANAGEMENT (Backend RBAC Enforced)
-@app.get("/api/admin/users")
-def get_users(admin: Dict[str, Any] = Depends(require_admin)):
-    conn = get_db_connection()
-    rows = conn.execute("SELECT id, username, name, email, role, status, created_at FROM users ORDER BY id ASC").fetchall()
-    conn.close()
-    return {"users": [dict(r) for r in rows]}
-
-@app.post("/api/admin/users")
-def create_user(u: UserModel, admin: Dict[str, Any] = Depends(require_admin)):
-    email_clean = (u.email or u.username or "").strip().lower()
-
-    if is_admin_email(email_clean):
-        raise HTTPException(status_code=400, detail="This email is reserved for the administrator.")
-
-    conn = get_db_connection()
-    u_id = u.id or f"USR-{uuid.uuid4().hex[:4].upper()}"
-    pw_hash = hash_password(u.password or "password123")
-    now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    role = u.role or "OPERATIONS_MANAGER"
-
-    try:
-        conn.execute("INSERT INTO users VALUES (?,?,?,?,?,?,?,?)", (u_id, email_clean, pw_hash, u.name, email_clean, role, u.status or "ACTIVE", now_str))
-        conn.commit()
-    except Exception as e:
-        conn.close()
-        raise HTTPException(status_code=400, detail="User account already exists.")
-
-    conn.close()
-    return {"status": "success", "id": u_id}
-
-@app.delete("/api/admin/users/{user_id}")
-def delete_user(user_id: str, admin: Dict[str, Any] = Depends(require_admin)):
-    success, msg = safe_delete_user(user_id)
-    if not success:
-        raise HTTPException(status_code=400, detail=msg)
-    return {"status": "success", "message": msg}
-
-@app.post("/api/admin/users/{user_id}/status")
-def change_user_status(user_id: str, req: UserStatusRequest, admin: Dict[str, Any] = Depends(require_admin)):
-    success, msg = toggle_user_status(user_id, req.status)
     if not success:
         raise HTTPException(status_code=400, detail=msg)
     return {"status": "success", "message": msg}
@@ -872,6 +960,14 @@ def create_escalation_api(req: EscalationRequest):
     conn.commit()
     conn.close()
     return {"status": "success", "id": esc_id}
+
+@app.post("/api/escalations/{escalation_id}/resolve")
+def resolve_escalation_api(escalation_id: str):
+    conn = get_db_connection()
+    conn.execute("UPDATE escalations SET status = 'RESOLVED' WHERE id = ?", (escalation_id,))
+    conn.commit()
+    conn.close()
+    return {"status": "success", "message": f"Escalation {escalation_id} resolved."}
 
 if __name__ == "__main__":
     import uvicorn

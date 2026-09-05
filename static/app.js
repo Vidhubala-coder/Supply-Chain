@@ -1,5 +1,5 @@
 /* ==========================================================================
-   app.js — Enterprise Control Tower (PS08) Application Logic
+   app.js — Enterprise Supply Chain Control Tower (PS08) Application Logic
    ========================================================================== */
 
 let currentUser = null;
@@ -54,13 +54,20 @@ function setupEventListeners() {
     }
   });
 
-  // Quick Demo Login Buttons
-  document.getElementById("btn-quick-admin")?.addEventListener("click", () => {
-    document.getElementById("login-email").value = "vidhub657@gmail.com";
-    document.getElementById("login-password").value = "admin123";
-    login("vidhub657@gmail.com", "admin123");
-  });
+  // Product Listeners
+  document.getElementById("btn-add-product")?.addEventListener("click", () => openAddProductModal());
+  document.getElementById("form-add-product")?.addEventListener("submit", (e) => submitAddProduct(e));
+  document.getElementById("form-edit-product")?.addEventListener("submit", (e) => submitEditProduct(e));
 
+  // Module Add Listeners
+  document.getElementById("btn-add-supplier")?.addEventListener("click", () => openAddSupplierModal());
+  document.getElementById("btn-add-warehouse")?.addEventListener("click", () => openAddWarehouseModal());
+  document.getElementById("btn-add-inventory")?.addEventListener("click", () => openAddInventoryModal());
+  document.getElementById("btn-add-shipment")?.addEventListener("click", () => openAddShipmentModal());
+  document.getElementById("btn-add-order")?.addEventListener("click", () => openAddOrderModal());
+  document.getElementById("btn-add-customer")?.addEventListener("click", () => openAddCustomerModal());
+
+  // Quick Manager Demo Login Button
   document.getElementById("btn-quick-manager")?.addEventListener("click", () => {
     document.getElementById("login-email").value = "ops@controltower.io";
     document.getElementById("login-password").value = "manager123";
@@ -237,17 +244,11 @@ function updateUserUI() {
 
   const nameEl = document.getElementById("user-display-name");
   const roleEl = document.getElementById("user-role-badge");
-  const adminNav = document.getElementById("nav-admin-btn");
 
   if (nameEl) nameEl.textContent = currentUser.name;
   if (roleEl) {
-    roleEl.textContent = currentUser.role;
-    roleEl.className = currentUser.role === "ADMIN" ? "role-badge role-admin" : "role-badge role-manager";
-  }
-
-  // Admin menu visibility
-  if (adminNav) {
-    adminNav.style.display = currentUser.role === "ADMIN" ? "flex" : "none";
+    roleEl.textContent = currentUser.role || "MANAGER";
+    roleEl.className = "role-badge role-manager";
   }
 }
 
@@ -294,7 +295,6 @@ function switchView(viewId) {
     case "notifications": loadNotifications(); break;
     case "reports": loadReports(); break;
     case "escalations": loadEscalations(); break;
-    case "admin": loadAdminUsers(); break;
   }
 }
 
@@ -321,7 +321,7 @@ async function loadSampleNotices() {
 }
 
 /* ==========================================================================
-   VIEW LOADERS
+   VIEW LOADERS & MODULE CRUD
    ========================================================================== */
 
 async function loadDashboard() {
@@ -380,6 +380,7 @@ async function loadDashboard() {
   } catch (err) {}
 }
 
+/* --- PRODUCT CRUD --- */
 async function loadProducts() {
   try {
     const res = await fetch("/api/products", { headers: authHeaders() });
@@ -397,6 +398,7 @@ async function loadProducts() {
           <td class="mono-num">${p.reorder_level}</td>
           <td><span class="badge badge-healthy">${p.status}</span></td>
           <td>
+            <button class="btn btn-secondary btn-sm" onclick="openEditProductModal('${p.id}')">Edit</button>
             <button class="btn btn-danger btn-sm" onclick="confirmDelete('product', '${p.id}')">Delete</button>
           </td>
         </tr>
@@ -405,6 +407,166 @@ async function loadProducts() {
   } catch (err) {}
 }
 
+async function openAddProductModal() {
+  const errBox = document.getElementById("add-p-error");
+  if (errBox) errBox.style.display = "none";
+
+  const form = document.getElementById("form-add-product");
+  if (form) form.reset();
+
+  const select = document.getElementById("add-p-supplier");
+  if (select) {
+    select.innerHTML = '<option value="">Loading suppliers...</option>';
+    try {
+      const res = await fetch("/api/suppliers", { headers: authHeaders() });
+      const data = await res.json();
+      if (data.suppliers) {
+        select.innerHTML = '<option value="">Select Supplier...</option>' +
+          data.suppliers.map(s => `<option value="${s.id}">${s.name} (${s.id})</option>`).join('');
+      }
+    } catch (err) {
+      select.innerHTML = '<option value="">Select Supplier...</option>';
+    }
+  }
+
+  const overlay = document.getElementById("modal-add-product-overlay");
+  if (overlay) overlay.style.display = "flex";
+}
+
+async function submitAddProduct(e) {
+  e.preventDefault();
+  const name = document.getElementById("add-p-name").value.trim();
+  const sku = document.getElementById("add-p-sku").value.trim();
+  const category = document.getElementById("add-p-category").value.trim();
+  const supplierId = document.getElementById("add-p-supplier").value;
+  const cost = parseFloat(document.getElementById("add-p-cost").value);
+  const reorder = parseInt(document.getElementById("add-p-reorder").value || "50");
+
+  const errBox = document.getElementById("add-p-error");
+  if (errBox) errBox.style.display = "none";
+
+  if (!name || !sku || !category || !supplierId || isNaN(cost) || cost < 0) {
+    if (errBox) {
+      errBox.textContent = "Please fill in all required fields with valid values.";
+      errBox.style.display = "block";
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch("/api/products", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        name, sku, category, supplier_id: supplierId, unit_cost: cost, reorder_level: reorder, status: "ACTIVE"
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      closeModal("modal-add-product-overlay");
+      alert(data.message || "Product added successfully.");
+      loadProducts();
+    } else {
+      if (errBox) {
+        errBox.textContent = data.detail || "Failed to add product.";
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = "Network error while creating product.";
+      errBox.style.display = "block";
+    }
+  }
+}
+
+async function openEditProductModal(productId) {
+  const errBox = document.getElementById("edit-p-error");
+  if (errBox) errBox.style.display = "none";
+
+  try {
+    const res = await fetch("/api/products", { headers: authHeaders() });
+    const data = await res.json();
+    const product = (data.products || []).find(p => p.id === productId);
+    if (!product) {
+      alert("Product not found.");
+      return;
+    }
+
+    document.getElementById("edit-p-id").value = product.id;
+    document.getElementById("edit-p-name").value = product.name;
+    document.getElementById("edit-p-sku").value = product.sku;
+    document.getElementById("edit-p-category").value = product.category;
+    document.getElementById("edit-p-cost").value = product.unit_cost;
+    document.getElementById("edit-p-reorder").value = product.reorder_level || 50;
+
+    const select = document.getElementById("edit-p-supplier");
+    if (select) {
+      const supRes = await fetch("/api/suppliers", { headers: authHeaders() });
+      const supData = await supRes.json();
+      if (supData.suppliers) {
+        select.innerHTML = supData.suppliers.map(s => 
+          `<option value="${s.id}" ${s.id === product.supplier_id ? 'selected' : ''}>${s.name} (${s.id})</option>`
+        ).join('');
+      }
+    }
+
+    const overlay = document.getElementById("modal-edit-product-overlay");
+    if (overlay) overlay.style.display = "flex";
+  } catch (err) {
+    alert("Error fetching product details.");
+  }
+}
+
+async function submitEditProduct(e) {
+  e.preventDefault();
+  const productId = document.getElementById("edit-p-id").value;
+  const name = document.getElementById("edit-p-name").value.trim();
+  const sku = document.getElementById("edit-p-sku").value.trim();
+  const category = document.getElementById("edit-p-category").value.trim();
+  const supplierId = document.getElementById("edit-p-supplier").value;
+  const cost = parseFloat(document.getElementById("edit-p-cost").value);
+  const reorder = parseInt(document.getElementById("edit-p-reorder").value || "50");
+
+  const errBox = document.getElementById("edit-p-error");
+  if (errBox) errBox.style.display = "none";
+
+  if (!name || !sku || !category || !supplierId || isNaN(cost) || cost < 0) {
+    if (errBox) {
+      errBox.textContent = "Please fill in all required fields with valid values.";
+      errBox.style.display = "block";
+    }
+    return;
+  }
+
+  try {
+    const res = await fetch(`/api/products/${productId}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        id: productId, name, sku, category, supplier_id: supplierId, unit_cost: cost, reorder_level: reorder, status: "ACTIVE"
+      })
+    });
+    const data = await res.json();
+    if (res.ok && data.status === "success") {
+      closeModal("modal-edit-product-overlay");
+      alert(data.message || "Product updated successfully.");
+      loadProducts();
+    } else {
+      if (errBox) {
+        errBox.textContent = data.detail || "Failed to update product.";
+        errBox.style.display = "block";
+      }
+    }
+  } catch (err) {
+    if (errBox) {
+      errBox.textContent = "Network error while updating product.";
+      errBox.style.display = "block";
+    }
+  }
+}
+
+/* --- SUPPLIERS CRUD --- */
 async function loadSuppliers() {
   try {
     const res = await fetch("/api/suppliers", { headers: authHeaders() });
@@ -421,6 +583,7 @@ async function loadSuppliers() {
           <td class="mono-num">${s.performance}%</td>
           <td><span class="badge badge-healthy">${s.status}</span></td>
           <td>
+            <button class="btn btn-secondary btn-sm" onclick="openEditSupplierModal('${s.id}')">Edit</button>
             <button class="btn btn-danger btn-sm" onclick="confirmDelete('supplier', '${s.id}')">Delete</button>
           </td>
         </tr>
@@ -429,6 +592,68 @@ async function loadSuppliers() {
   } catch (err) {}
 }
 
+async function openAddSupplierModal() {
+  const name = prompt("Supplier Name:");
+  if (!name) return;
+  const contact = prompt("Contact Person Name:");
+  if (!contact) return;
+  const email = prompt("Email Address:");
+  if (!email) return;
+  const location = prompt("Location / Region:");
+  if (!location) return;
+
+  try {
+    const res = await fetch("/api/suppliers", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, contact, email, location, performance: 95.0, status: "ACTIVE" })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Supplier added successfully.");
+      loadSuppliers();
+    } else {
+      alert(data.detail || "Error adding supplier.");
+    }
+  } catch (err) {
+    alert("Network error creating supplier.");
+  }
+}
+
+async function openEditSupplierModal(supplierId) {
+  try {
+    const res = await fetch("/api/suppliers", { headers: authHeaders() });
+    const data = await res.json();
+    const supplier = (data.suppliers || []).find(s => s.id === supplierId);
+    if (!supplier) return alert("Supplier not found.");
+
+    const name = prompt("Edit Supplier Name:", supplier.name);
+    if (!name) return;
+    const contact = prompt("Edit Contact Person:", supplier.contact);
+    if (!contact) return;
+    const email = prompt("Edit Email Address:", supplier.email);
+    if (!email) return;
+    const location = prompt("Edit Location:", supplier.location);
+    if (!location) return;
+
+    const putRes = await fetch(`/api/suppliers/${supplierId}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, contact, email, location, performance: supplier.performance, status: supplier.status })
+    });
+    const putData = await putRes.json();
+    if (putRes.ok) {
+      alert(putData.message || "Supplier updated successfully.");
+      loadSuppliers();
+    } else {
+      alert(putData.detail || "Error updating supplier.");
+    }
+  } catch (err) {
+    alert("Network error updating supplier.");
+  }
+}
+
+/* --- WAREHOUSES CRUD --- */
 async function loadWarehouses() {
   try {
     const res = await fetch("/api/warehouses", { headers: authHeaders() });
@@ -443,12 +668,76 @@ async function loadWarehouses() {
           <td class="mono-num">${w.capacity.toLocaleString()} sqft</td>
           <td class="mono-num">${w.current_utilization}%</td>
           <td><span class="badge badge-healthy">${w.status}</span></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="openEditWarehouseModal('${w.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDelete('warehouse', '${w.id}')">Delete</button>
+          </td>
         </tr>
       `).join('');
     }
   } catch (err) {}
 }
 
+async function openAddWarehouseModal() {
+  const name = prompt("Warehouse / Facility Name:");
+  if (!name) return;
+  const location = prompt("Location:");
+  if (!location) return;
+  const capacityStr = prompt("Total Capacity (sqft):", "50000");
+  if (!capacityStr) return;
+  const capacity = parseInt(capacityStr);
+
+  try {
+    const res = await fetch("/api/warehouses", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, location, capacity, current_utilization: 50.0, status: "ACTIVE" })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Warehouse added successfully.");
+      loadWarehouses();
+    } else {
+      alert(data.detail || "Error adding warehouse.");
+    }
+  } catch (err) {
+    alert("Network error creating warehouse.");
+  }
+}
+
+async function openEditWarehouseModal(warehouseId) {
+  try {
+    const res = await fetch("/api/warehouses", { headers: authHeaders() });
+    const data = await res.json();
+    const warehouse = (data.warehouses || []).find(w => w.id === warehouseId);
+    if (!warehouse) return alert("Warehouse not found.");
+
+    const name = prompt("Edit Facility Name:", warehouse.name);
+    if (!name) return;
+    const location = prompt("Edit Location:", warehouse.location);
+    if (!location) return;
+    const capacityStr = prompt("Edit Capacity (sqft):", warehouse.capacity);
+    if (!capacityStr) return;
+    const capacity = parseInt(capacityStr);
+
+    const putRes = await fetch(`/api/warehouses/${warehouseId}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, location, capacity, current_utilization: warehouse.current_utilization, status: warehouse.status })
+    });
+    const putData = await putRes.json();
+    if (putRes.ok) {
+      alert(putData.message || "Warehouse updated successfully.");
+      loadWarehouses();
+    } else {
+      alert(putData.detail || "Error updating warehouse.");
+    }
+  } catch (err) {
+    alert("Network error updating warehouse.");
+  }
+}
+
+/* --- INVENTORY CRUD --- */
 async function loadInventory() {
   try {
     const res = await fetch("/api/inventory", { headers: authHeaders() });
@@ -470,6 +759,10 @@ async function loadInventory() {
             <td class="mono-num">${i.safety_stock}</td>
             <td class="mono-num"><strong>${i.stock_coverage_days} days</strong></td>
             <td><span class="badge ${badgeClass}">${i.status}</span></td>
+            <td>
+              <button class="btn btn-secondary btn-sm" onclick="openEditInventoryModal('${i.id}')">Edit</button>
+              <button class="btn btn-danger btn-sm" onclick="confirmDelete('inventory', '${i.id}')">Delete</button>
+            </td>
           </tr>
         `;
       }).join('');
@@ -477,6 +770,72 @@ async function loadInventory() {
   } catch (err) {}
 }
 
+async function openAddInventoryModal() {
+  const productId = prompt("Product ID (e.g. PRD-SKU-101):");
+  if (!productId) return;
+  const warehouseId = prompt("Warehouse ID (e.g. WH-NORTH):");
+  if (!warehouseId) return;
+  const stockStr = prompt("Current Stock Quantity:", "500");
+  if (!stockStr) return;
+  const demandStr = prompt("Daily Demand Quantity:", "25");
+  if (!demandStr) return;
+  const safetyStr = prompt("Safety Stock Quantity:", "100");
+
+  try {
+    const res = await fetch("/api/inventory", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        product_id: productId, warehouse_id: warehouseId,
+        current_stock: parseInt(stockStr), daily_demand: parseInt(demandStr), safety_stock: parseInt(safetyStr || "0")
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Inventory allocation added successfully.");
+      loadInventory();
+    } else {
+      alert(data.detail || "Error adding inventory.");
+    }
+  } catch (err) {
+    alert("Network error creating inventory allocation.");
+  }
+}
+
+async function openEditInventoryModal(inventoryId) {
+  try {
+    const res = await fetch("/api/inventory", { headers: authHeaders() });
+    const data = await res.json();
+    const item = (data.inventory || []).find(i => i.id === inventoryId);
+    if (!item) return alert("Inventory item not found.");
+
+    const stockStr = prompt("Edit Current Stock Quantity:", item.current_stock);
+    if (!stockStr) return;
+    const demandStr = prompt("Edit Daily Demand:", item.daily_demand);
+    if (!demandStr) return;
+    const safetyStr = prompt("Edit Safety Stock:", item.safety_stock);
+
+    const putRes = await fetch(`/api/inventory/${inventoryId}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        product_id: item.product_id, warehouse_id: item.warehouse_id,
+        current_stock: parseInt(stockStr), daily_demand: parseInt(demandStr), safety_stock: parseInt(safetyStr || "0")
+      })
+    });
+    const putData = await putRes.json();
+    if (putRes.ok) {
+      alert(putData.message || "Inventory updated successfully.");
+      loadInventory();
+    } else {
+      alert(putData.detail || "Error updating inventory.");
+    }
+  } catch (err) {
+    alert("Network error updating inventory.");
+  }
+}
+
+/* --- SHIPMENTS CRUD --- */
 async function loadShipments() {
   try {
     const res = await fetch("/api/shipments", { headers: authHeaders() });
@@ -494,13 +853,87 @@ async function loadShipments() {
           <td class="mono-num">${s.expected_delivery}</td>
           <td class="mono-num">${s.actual_delivery || '-'}</td>
           <td><span class="badge ${s.status === 'DELIVERED' ? 'badge-delivered' : (s.status === 'DELAYED' ? 'badge-delayed' : 'badge-intransit')}">${s.status}</span></td>
-          <td><button class="btn btn-secondary btn-sm" onclick="openTrackingModal('${s.id}')">Timeline &rarr;</button></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="openTrackingModal('${s.id}')">Timeline</button>
+            <button class="btn btn-secondary btn-sm" onclick="openEditShipmentModal('${s.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDelete('shipment', '${s.id}')">Delete</button>
+          </td>
         </tr>
       `).join('');
     }
   } catch (err) {}
 }
 
+async function openAddShipmentModal() {
+  const supplierId = prompt("Supplier ID (e.g. SUP-101):");
+  if (!supplierId) return;
+  const productId = prompt("Product ID (e.g. PRD-SKU-101):");
+  if (!productId) return;
+  const qtyStr = prompt("Quantity:", "1000");
+  if (!qtyStr) return;
+  const origin = prompt("Origin City / Location:", "Berlin Depot");
+  if (!origin) return;
+  const destWh = prompt("Destination Warehouse ID:", "WH-NORTH");
+  if (!destWh) return;
+  const eta = prompt("Expected Delivery Date (YYYY-MM-DD):", "2026-09-20");
+  if (!eta) return;
+
+  try {
+    const res = await fetch("/api/shipments", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        supplier_id: supplierId, product_id: productId, quantity: parseInt(qtyStr),
+        origin, destination_warehouse_id: destWh, expected_delivery: eta, status: "PLANNED"
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Shipment created successfully.");
+      loadShipments();
+    } else {
+      alert(data.detail || "Error creating shipment.");
+    }
+  } catch (err) {
+    alert("Network error creating shipment.");
+  }
+}
+
+async function openEditShipmentModal(shipmentId) {
+  try {
+    const res = await fetch("/api/shipments", { headers: authHeaders() });
+    const data = await res.json();
+    const item = (data.shipments || []).find(s => s.id === shipmentId);
+    if (!item) return alert("Shipment not found.");
+
+    const qtyStr = prompt("Edit Quantity:", item.quantity);
+    if (!qtyStr) return;
+    const eta = prompt("Edit Expected Delivery (YYYY-MM-DD):", item.expected_delivery);
+    if (!eta) return;
+    const status = prompt("Edit Status (PLANNED, IN TRANSIT, DELAYED, DELIVERED, CANCELLED):", item.status);
+    if (!status) return;
+
+    const putRes = await fetch(`/api/shipments/${shipmentId}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        supplier_id: item.supplier_id, product_id: item.product_id, quantity: parseInt(qtyStr),
+        origin: item.origin, destination_warehouse_id: item.destination_warehouse, expected_delivery: eta, status
+      })
+    });
+    const putData = await putRes.json();
+    if (putRes.ok) {
+      alert(putData.message || "Shipment updated successfully.");
+      loadShipments();
+    } else {
+      alert(putData.detail || "Error updating shipment.");
+    }
+  } catch (err) {
+    alert("Network error updating shipment.");
+  }
+}
+
+/* --- ORDERS CRUD --- */
 async function loadOrders() {
   try {
     const res = await fetch("/api/orders", { headers: authHeaders() });
@@ -517,12 +950,85 @@ async function loadOrders() {
           <td class="mono-num">${o.required_delivery_date}</td>
           <td><span class="badge ${o.priority === 'CRITICAL' ? 'badge-critical' : 'badge-low'}">${o.priority}</span></td>
           <td><span class="badge badge-healthy">${o.status}</span></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="openEditOrderModal('${o.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDelete('order', '${o.id}')">Delete</button>
+          </td>
         </tr>
       `).join('');
     }
   } catch (err) {}
 }
 
+async function openAddOrderModal() {
+  const customerId = prompt("Customer ID (e.g. CUST-101):");
+  if (!customerId) return;
+  const productId = prompt("Product ID (e.g. PRD-SKU-101):");
+  if (!productId) return;
+  const qtyStr = prompt("Order Quantity:", "200");
+  if (!qtyStr) return;
+  const deliveryDate = prompt("Required Delivery Date (YYYY-MM-DD):", "2026-09-25");
+  if (!deliveryDate) return;
+  const priority = prompt("Priority (NORMAL, HIGH, CRITICAL):", "NORMAL");
+
+  try {
+    const res = await fetch("/api/orders", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        customer_id: customerId, product_id: productId, quantity: parseInt(qtyStr),
+        order_date: new Date().toISOString().substring(0, 10), required_delivery_date: deliveryDate,
+        status: "PENDING", priority: priority || "NORMAL"
+      })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Order created successfully.");
+      loadOrders();
+    } else {
+      alert(data.detail || "Error creating order.");
+    }
+  } catch (err) {
+    alert("Network error creating order.");
+  }
+}
+
+async function openEditOrderModal(orderId) {
+  try {
+    const res = await fetch("/api/orders", { headers: authHeaders() });
+    const data = await res.json();
+    const item = (data.orders || []).find(o => o.id === orderId);
+    if (!item) return alert("Order not found.");
+
+    const qtyStr = prompt("Edit Quantity:", item.quantity);
+    if (!qtyStr) return;
+    const deliveryDate = prompt("Edit Required Delivery Date (YYYY-MM-DD):", item.required_delivery_date);
+    if (!deliveryDate) return;
+    const status = prompt("Edit Status (PENDING, CONFIRMED, PROCESSING, SHIPPED, DELIVERED, CANCELLED):", item.status);
+    if (!status) return;
+    const priority = prompt("Edit Priority (NORMAL, HIGH, CRITICAL):", item.priority);
+
+    const putRes = await fetch(`/api/orders/${orderId}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({
+        customer_id: item.customer_id, product_id: item.product_id, quantity: parseInt(qtyStr),
+        order_date: item.order_date, required_delivery_date: deliveryDate, status, priority: priority || "NORMAL"
+      })
+    });
+    const putData = await putRes.json();
+    if (putRes.ok) {
+      alert(putData.message || "Order updated successfully.");
+      loadOrders();
+    } else {
+      alert(putData.detail || "Error updating order.");
+    }
+  } catch (err) {
+    alert("Network error updating order.");
+  }
+}
+
+/* --- CUSTOMERS CRUD --- */
 async function loadCustomers() {
   try {
     const res = await fetch("/api/customers", { headers: authHeaders() });
@@ -536,13 +1042,76 @@ async function loadCustomers() {
           <td>${c.company}</td>
           <td>${c.email}</td>
           <td><span class="badge ${c.criticality === 'CRITICAL' ? 'badge-critical' : 'badge-healthy'}">${c.criticality}</span></td>
-          <td><button class="btn btn-danger btn-sm" onclick="confirmDelete('customer', '${c.id}')">Delete</button></td>
+          <td>
+            <button class="btn btn-secondary btn-sm" onclick="openEditCustomerModal('${c.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="confirmDelete('customer', '${c.id}')">Delete</button>
+          </td>
         </tr>
       `).join('');
     }
   } catch (err) {}
 }
 
+async function openAddCustomerModal() {
+  const name = prompt("Customer Name:");
+  if (!name) return;
+  const company = prompt("Company Name:");
+  if (!company) return;
+  const email = prompt("Email Address:");
+  if (!email) return;
+  const priority = prompt("Priority Tier (NORMAL, HIGH, CRITICAL):", "NORMAL");
+
+  try {
+    const res = await fetch("/api/customers", {
+      method: "POST",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, company, email, priority: priority || "NORMAL" })
+    });
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message || "Customer added successfully.");
+      loadCustomers();
+    } else {
+      alert(data.detail || "Error adding customer.");
+    }
+  } catch (err) {
+    alert("Network error creating customer.");
+  }
+}
+
+async function openEditCustomerModal(customerId) {
+  try {
+    const res = await fetch("/api/customers", { headers: authHeaders() });
+    const data = await res.json();
+    const customer = (data.customers || []).find(c => c.id === customerId);
+    if (!customer) return alert("Customer not found.");
+
+    const name = prompt("Edit Customer Name:", customer.name);
+    if (!name) return;
+    const company = prompt("Edit Company Name:", customer.company);
+    if (!company) return;
+    const email = prompt("Edit Email Address:", customer.email);
+    if (!email) return;
+    const priority = prompt("Edit Tier (NORMAL, HIGH, CRITICAL):", customer.priority);
+
+    const putRes = await fetch(`/api/customers/${customerId}`, {
+      method: "PUT",
+      headers: authHeaders(),
+      body: JSON.stringify({ name, company, email, priority: priority || "NORMAL" })
+    });
+    const putData = await putRes.json();
+    if (putRes.ok) {
+      alert(putData.message || "Customer updated successfully.");
+      loadCustomers();
+    } else {
+      alert(putData.detail || "Error updating customer.");
+    }
+  } catch (err) {
+    alert("Network error updating customer.");
+  }
+}
+
+/* --- OTHER MODULE LOADERS --- */
 async function loadDisruptions() {
   try {
     const res = await fetch("/api/disruptions", { headers: authHeaders() });
@@ -654,64 +1223,27 @@ async function loadEscalations() {
           <td>${e.assigned_to}</td>
           <td class="mono-num">${e.created_at}</td>
           <td><span class="badge badge-action">${e.status}</span></td>
-          <td><button class="btn btn-secondary btn-sm">Resolve</button></td>
+          <td>
+            ${e.status === 'RESOLVED' ? '<span class="badge badge-delivered">Resolved</span>' : `<button class="btn btn-secondary btn-sm" onclick="resolveEscalation('${e.id}')">Resolve</button>`}
+          </td>
         </tr>
       `).join('');
     }
   } catch (err) {}
 }
 
-async function loadAdminUsers() {
+async function resolveEscalation(id) {
   try {
-    const res = await fetch("/api/admin/users", { headers: authHeaders() });
-    if (!res.ok) {
-      alert("Access denied. Admin role required.");
-      switchView("dashboard");
-      return;
-    }
-    const data = await res.json();
-    const tbody = document.getElementById("admin-users-tbody");
-    if (tbody && data.users) {
-      tbody.innerHTML = data.users.map(u => {
-        const isAdmin = u.email.toLowerCase() === "vidhub657@gmail.com" || u.role === "ADMIN";
-        const actionBtn = isAdmin
-          ? `<span class="badge badge-exact">Protected Account</span>`
-          : `
-            <button class="btn btn-secondary btn-sm" onclick="toggleUserStatus('${u.id}', '${u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'}')">${u.status === 'ACTIVE' ? 'Deactivate' : 'Activate'}</button>
-            <button class="btn btn-danger btn-sm" onclick="confirmDelete('user', '${u.id}')">Delete</button>
-          `;
-
-        return `
-          <tr>
-            <td class="mono-num">${u.id}</td>
-            <td><strong>${u.username}</strong></td>
-            <td>${u.name}</td>
-            <td>${u.email}</td>
-            <td><span class="role-badge ${u.role === 'ADMIN' ? 'role-admin' : 'role-manager'}">${u.role}</span></td>
-            <td><span class="badge ${u.status === 'ACTIVE' ? 'badge-healthy' : 'badge-critical'}">${u.status}</span></td>
-            <td>${actionBtn}</td>
-          </tr>
-        `;
-      }).join('');
-    }
-  } catch (err) {}
-}
-
-async function toggleUserStatus(userId, newStatus) {
-  try {
-    const res = await fetch(`/api/admin/users/${userId}/status`, {
+    const res = await fetch(`/api/escalations/${id}/resolve`, {
       method: "POST",
-      headers: authHeaders(),
-      body: JSON.stringify({ status: newStatus })
+      headers: authHeaders()
     });
-    const data = await res.json();
     if (res.ok) {
-      loadAdminUsers();
-    } else {
-      alert(data.detail || "Error updating user status.");
+      alert(`Escalation ${id} resolved successfully.`);
+      loadEscalations();
     }
   } catch (err) {
-    alert("Network error updating status.");
+    alert("Error resolving escalation.");
   }
 }
 
@@ -899,15 +1431,18 @@ function confirmDelete(type, id) {
   if (btn) {
     btn.onclick = async () => {
       try {
-        const res = await fetch(`/api/${type}s/${id}`, {
+        const endpoint = `/api/${type}s/${id}`;
+        const res = await fetch(endpoint, {
           method: "DELETE",
           headers: authHeaders()
         });
         const data = await res.json();
 
-        if (res.ok && data.status === "success") {
+        if (res.ok && (data.status === "success" || data.message)) {
           closeModal("delete-modal-overlay");
-          switchView(`${type}s`);
+          alert(data.message || `${type.toUpperCase()} deleted successfully.`);
+          const targetView = `${type}s`;
+          switchView(targetView);
         } else {
           alert(`Deletion Blocked: ${data.detail || 'Relational integrity guard prevented deletion.'}`);
           closeModal("delete-modal-overlay");

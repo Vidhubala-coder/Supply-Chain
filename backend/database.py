@@ -43,7 +43,7 @@ def init_db():
         password_hash TEXT NOT NULL,
         name TEXT NOT NULL,
         email TEXT NOT NULL,
-        role TEXT NOT NULL, -- 'ADMIN' or 'OPERATIONS MANAGER'
+        role TEXT NOT NULL, -- 'MANAGER'
         status TEXT DEFAULT 'ACTIVE',
         created_at TEXT NOT NULL
     );
@@ -115,6 +115,7 @@ def init_db():
         company TEXT NOT NULL,
         email TEXT NOT NULL,
         priority TEXT DEFAULT 'NORMAL', -- 'CRITICAL', 'HIGH', 'NORMAL'
+        status TEXT DEFAULT 'ACTIVE',
         created_at TEXT NOT NULL
     );
 
@@ -203,6 +204,11 @@ def init_db():
         user_name TEXT
     );
     """)
+    for tbl in ["customers", "products", "suppliers", "warehouses"]:
+        try:
+            cursor.execute(f"ALTER TABLE {tbl} ADD COLUMN status TEXT DEFAULT 'ACTIVE'")
+        except Exception:
+            pass
     conn.commit()
 
     seed_initial_data(conn)
@@ -222,16 +228,12 @@ def seed_initial_data(conn: sqlite3.Connection):
     cursor = conn.cursor()
     now_str = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-    # 1. Seed Users
-    cursor.execute("SELECT COUNT(*) FROM users WHERE LOWER(email) = 'vidhub657@gmail.com' OR id = 'USR-ADMIN'")
-    if cursor.fetchone()[0] == 0:
-        cursor.execute("INSERT OR REPLACE INTO users VALUES (?,?,?,?,?,?,?,?)", ("USR-ADMIN", "vidhub657@gmail.com", "ENV_MANAGED", "System Administrator", "vidhub657@gmail.com", "ADMIN", "ACTIVE", now_str))
-
+    # 1. Seed Manager Users
     cursor.execute("SELECT COUNT(*) FROM users")
-    if cursor.fetchone()[0] <= 1:
+    if cursor.fetchone()[0] == 0:
         users = [
-            ("USR-002", "ops_manager", hash_password("manager123"), "Lead Ops Manager", "ops@controltower.io", "OPERATIONS_MANAGER", "ACTIVE", now_str),
-            ("USR-003", "sarah_ops", hash_password("sarah123"), "Sarah Jenkins (Logistics)", "s.jenkins@controltower.io", "OPERATIONS_MANAGER", "ACTIVE", now_str)
+            ("USR-001", "ops_manager", hash_password("manager123"), "Lead Ops Manager", "ops@controltower.io", "MANAGER", "ACTIVE", now_str),
+            ("USR-002", "sarah_ops", hash_password("sarah123"), "Sarah Jenkins (Logistics)", "s.jenkins@controltower.io", "MANAGER", "ACTIVE", now_str)
         ]
         for u in users:
             cursor.execute("INSERT OR IGNORE INTO users VALUES (?,?,?,?,?,?,?,?)", u)
@@ -480,7 +482,7 @@ def seed_initial_data(conn: sqlite3.Connection):
     cursor.execute("SELECT COUNT(*) FROM reports")
     if cursor.fetchone()[0] == 0:
         reports = [
-            ("REP-2026-08", "2026-08", "August 2026 Monthly Supply Chain Performance Report", 34, 28, 4, 2, 102, 12, 88, 14, 5, 4, 1, 3, "Executive Admin", "COMPLETED", now_str)
+            ("REP-2026-08", "2026-08", "August 2026 Monthly Supply Chain Performance Report", 34, 28, 4, 2, 102, 12, 88, 14, 5, 4, 1, 3, "Lead Ops Manager", "COMPLETED", now_str)
         ]
         cursor.executemany("INSERT INTO reports VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", reports)
 
@@ -489,7 +491,7 @@ def seed_initial_data(conn: sqlite3.Connection):
 # Unified Data Accessors (backed by SQLite with 100% backward-compatible key aliases)
 def fetch_suppliers() -> List[Dict[str, Any]]:
     conn = get_db_connection()
-    rows = conn.execute("SELECT * FROM suppliers").fetchall()
+    rows = conn.execute("SELECT * FROM suppliers WHERE status != 'INACTIVE'").fetchall()
     conn.close()
     res = []
     for r in rows:
@@ -601,7 +603,7 @@ def fetch_orders() -> List[Dict[str, Any]]:
 
 def fetch_customers() -> List[Dict[str, Any]]:
     conn = get_db_connection()
-    rows = conn.execute("SELECT * FROM customers").fetchall()
+    rows = conn.execute("SELECT * FROM customers WHERE status != 'INACTIVE'").fetchall()
     conn.close()
     res = []
     for r in rows:
@@ -618,93 +620,75 @@ def safe_delete_product(product_id: str) -> Tuple[bool, str]:
     c = conn.cursor()
 
     inv_count = c.execute("SELECT COUNT(*) FROM inventory WHERE product_id = ?", (product_id,)).fetchone()[0]
-    if inv_count > 0:
-        conn.close()
-        return False, f"Product {product_id} is referenced by {inv_count} active inventory record(s). Deletion blocked to maintain database integrity."
-
     shp_count = c.execute("SELECT COUNT(*) FROM shipments WHERE product_id = ?", (product_id,)).fetchone()[0]
-    if shp_count > 0:
-        conn.close()
-        return False, f"Product {product_id} is referenced by {shp_count} active shipment(s). Deletion blocked."
-
     ord_count = c.execute("SELECT COUNT(*) FROM orders WHERE product_id = ?", (product_id,)).fetchone()[0]
-    if ord_count > 0:
+
+    if inv_count > 0 or shp_count > 0 or ord_count > 0:
+        c.execute("UPDATE products SET status = 'INACTIVE' WHERE id = ?", (product_id,))
+        conn.commit()
         conn.close()
-        return False, f"Product {product_id} is referenced by {ord_count} active customer order(s). Deletion blocked."
+        return True, "Product deactivated because it is referenced by existing records."
 
     c.execute("DELETE FROM products WHERE id = ?", (product_id,))
     conn.commit()
     conn.close()
-    return True, f"Product {product_id} successfully deleted."
+    return True, "Product deleted successfully."
 
 def safe_delete_supplier(supplier_id: str) -> Tuple[bool, str]:
     conn = get_db_connection()
     c = conn.cursor()
 
     prd_count = c.execute("SELECT COUNT(*) FROM products WHERE supplier_id = ?", (supplier_id,)).fetchone()[0]
-    if prd_count > 0:
-        conn.close()
-        return False, f"Supplier {supplier_id} supplies {prd_count} active product(s). Deletion blocked to protect relational integrity."
-
     shp_count = c.execute("SELECT COUNT(*) FROM shipments WHERE supplier_id = ?", (supplier_id,)).fetchone()[0]
-    if shp_count > 0:
+
+    if prd_count > 0 or shp_count > 0:
+        c.execute("UPDATE suppliers SET status = 'INACTIVE' WHERE id = ?", (supplier_id,))
+        conn.commit()
         conn.close()
-        return False, f"Supplier {supplier_id} has {shp_count} active shipment record(s). Deletion blocked."
+        return True, "Supplier deactivated because it is referenced by existing records."
 
     c.execute("DELETE FROM suppliers WHERE id = ?", (supplier_id,))
     conn.commit()
     conn.close()
-    return True, f"Supplier {supplier_id} successfully deleted."
+    return True, "Supplier deleted successfully."
 
 def safe_delete_warehouse(warehouse_id: str) -> Tuple[bool, str]:
     conn = get_db_connection()
     c = conn.cursor()
 
     inv_count = c.execute("SELECT COUNT(*) FROM inventory WHERE warehouse_id = ?", (warehouse_id,)).fetchone()[0]
+
     if inv_count > 0:
+        c.execute("UPDATE warehouses SET status = 'INACTIVE' WHERE id = ?", (warehouse_id,))
+        conn.commit()
         conn.close()
-        return False, f"Warehouse {warehouse_id} currently holds {inv_count} active inventory stock allocation(s). Deletion blocked."
+        return True, "Warehouse deactivated because it is referenced by existing records."
 
     c.execute("DELETE FROM warehouses WHERE id = ?", (warehouse_id,))
     conn.commit()
     conn.close()
-    return True, f"Warehouse {warehouse_id} successfully deleted."
+    return True, "Warehouse deleted successfully."
 
 def safe_delete_customer(customer_id: str) -> Tuple[bool, str]:
     conn = get_db_connection()
     c = conn.cursor()
 
     ord_count = c.execute("SELECT COUNT(*) FROM orders WHERE customer_id = ?", (customer_id,)).fetchone()[0]
+
     if ord_count > 0:
+        c.execute("UPDATE customers SET status = 'INACTIVE' WHERE id = ?", (customer_id,))
+        conn.commit()
         conn.close()
-        return False, f"Customer {customer_id} has {ord_count} placed order(s). Deletion blocked."
+        return True, "Customer deactivated because it is referenced by existing records."
 
     c.execute("DELETE FROM customers WHERE id = ?", (customer_id,))
     conn.commit()
     conn.close()
-    return True, f"Customer {customer_id} successfully deleted."
+    return True, "Customer deleted successfully."
 
 def safe_delete_user(user_id: str) -> Tuple[bool, str]:
     conn = get_db_connection()
     c = conn.cursor()
-
-    if user_id == "USR-ADMIN" or user_id.lower() == "vidhub657@gmail.com":
-        conn.close()
-        return False, "The primary administrator account (vidhub657@gmail.com) is protected and cannot be deleted."
-
-    user_row = c.execute("SELECT role, email FROM users WHERE id = ? OR LOWER(email) = ?", (user_id, user_id.lower())).fetchone()
-    if user_row:
-        email = user_row["email"].lower()
-        if email == "vidhub657@gmail.com":
-            conn.close()
-            return False, "The primary administrator account (vidhub657@gmail.com) is protected and cannot be deleted."
-
-    admin_count = c.execute("SELECT COUNT(*) FROM users WHERE role = 'ADMIN'").fetchone()[0]
-
-    if user_row and user_row["role"] == "ADMIN" and admin_count <= 1:
-        conn.close()
-        return False, "Cannot delete the sole remaining ADMIN user in the system."
-
     c.execute("DELETE FROM users WHERE id = ?", (user_id,))
     conn.commit()
     conn.close()
@@ -713,13 +697,8 @@ def safe_delete_user(user_id: str) -> Tuple[bool, str]:
 def toggle_user_status(user_id: str, new_status: str) -> Tuple[bool, str]:
     conn = get_db_connection()
     c = conn.cursor()
-
-    user_row = c.execute("SELECT email FROM users WHERE id = ?", (user_id,)).fetchone()
-    if user_row and user_row["email"].lower() == "vidhub657@gmail.com":
-        conn.close()
-        return False, "The primary administrator account cannot be deactivated."
-
     c.execute("UPDATE users SET status = ? WHERE id = ?", (new_status, user_id))
     conn.commit()
     conn.close()
+    return True, f"User {user_id} status updated to {new_status}."
     return True, f"User {user_id} status updated to {new_status}."
